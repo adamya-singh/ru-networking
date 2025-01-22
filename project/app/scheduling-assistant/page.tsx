@@ -1,194 +1,276 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Calendar, BookOpen, GraduationCap, User, Save, HelpCircle, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
+import { Avatar } from '@/components/ui/avatar';
+import {
+  Mic,
+  Settings2,
+  User,
+  LogOut,
+  ChevronDown,
+  MessageSquare,
+  Save,
+  ThumbsUp,
+  ThumbsDown,
+  Trash2,
+  Download,
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-export default function SchedulingAssistant() {
-  const [question, setQuestion] = useState('');
-  const [response, setResponse] = useState('');
+interface Message {
+  id: number;
+  content: string;
+  sender: 'user' | 'bot';
+  timestamp: Date;
+}
 
-  const handleAskQuestion = () => {
-    // Placeholder for AI interaction
-    setResponse('This is a sample response. In production, this would be connected to your AI backend.');
+export default function Home() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 1,
+      content: "Hi! I'm your academic assistant. How can I help you plan your schedule today?",
+      sender: 'bot',
+      timestamp: new Date(),
+    },
+  ]);
+  const [inputValue, setInputValue] = useState('');
+
+  const handleSend = () => {
+    if (!inputValue.trim()) return;
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        content: inputValue,
+        sender: 'user',
+        timestamp: new Date(),
+      },
+    ]);
+    setInputValue('');
   };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-bold text-primary mb-2">AI-Powered Scheduling Assistant</h1>
-          <p className="text-lg text-muted-foreground mb-6">
-            Ask detailed questions about courses, get recommendations tailored to your goals, and simplify your semester planning.
-          </p>
-          <div className="relative max-w-2xl">
-            <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="What courses fulfill my major requirements for Computer Science?"
-              className="pl-10 pr-4 h-12"
-            />
+      <header className="fixed top-0 left-0 right-0 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+        <div className="container h-full flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="h-6 w-6 text-primary" />
+            <span className="font-semibold text-lg">RUNetworking</span>
           </div>
+          <nav className="hidden md:flex items-center space-x-6">
+            <Button variant="ghost">Dashboard</Button>
+            <Button variant="ghost">Find Classmates</Button>
+            <Button variant="ghost">Help</Button>
+          </nav>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Avatar className="h-8 w-8">
+                  <User className="h-4 w-4" />
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <Settings2 className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 flex gap-6">
-        {/* Main Content */}
-        <main className="flex-1">
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Ask a Question</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Input
-                  placeholder="Type your question here..."
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                />
-                <div className="flex gap-4">
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Semester" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fall2024">Fall 2024</SelectItem>
-                      <SelectItem value="spring2025">Spring 2025</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Major" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cs">Computer Science</SelectItem>
-                      <SelectItem value="math">Mathematics</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Difficulty" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="easy">Easy</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="hard">Hard</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button onClick={handleAskQuestion}>
-                  Ask the Assistant
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Response Display */}
+      {/* Main Content */}
+      <main className="container pt-20 pb-4 flex gap-4 h-[calc(100vh-1rem)]">
+        {/* Left Sidebar */}
+        <aside className="w-64 hidden lg:block">
           <Card>
-            <CardHeader>
-              <CardTitle>Recommendations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[400px] pr-4">
-                {response ? (
-                  <div className="space-y-4">
-                    <p className="text-muted-foreground">{response}</p>
-                    {/* Sample Course Recommendation */}
-                    <Card>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-semibold">CS 111: Introduction to Computer Science</h3>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              An introduction to programming methodology and problem solving using Java.
-                            </p>
-                            <p className="text-sm mt-2">Credits: 4 | Schedule: MW 10:00-11:20</p>
-                          </div>
-                          <div className="space-x-2">
-                            <Button variant="outline" size="sm">
-                              Add to Schedule
-                            </Button>
-                            <Button variant="secondary" size="sm">
-                              View Similar
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    Ask a question to see recommendations
-                  </p>
-                )}
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </main>
-
-        {/* Sidebar */}
-        <aside className="w-80 shrink-0">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <User className="h-5 w-5" />
-                <p className="font-semibold">Welcome, Student!</p>
-              </div>
-              
-              <div className="space-y-4">
-                <Button variant="outline" className="w-full justify-start">
-                  <Calendar className="mr-2 h-4 w-4" /> Saved Schedules
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <BookOpen className="mr-2 h-4 w-4" /> View Degree Progress
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <GraduationCap className="mr-2 h-4 w-4" /> Explore Career Pathways
-                </Button>
-              </div>
-
-              <Separator className="my-6" />
-
-              <div className="space-y-4">
-                <h3 className="font-semibold">Personalization</h3>
+            <CardContent className="p-4 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Term Selection</label>
                 <Select>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select Interests" />
+                    <SelectValue placeholder="Select term" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ai">Artificial Intelligence</SelectItem>
-                    <SelectItem value="web">Web Development</SelectItem>
-                    <SelectItem value="data">Data Science</SelectItem>
+                    <SelectItem value="fall2025">Fall 2025</SelectItem>
+                    <SelectItem value="spring2026">Spring 2026</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Class Size Preference</label>
+                <Slider defaultValue={[50]} max={100} step={1} />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Focus Areas</label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Major Requirements</span>
+                    <Switch />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Gen-Eds</span>
+                    <Switch />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Career-Oriented</span>
+                    <Switch />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Class History</label>
+                <ScrollArea className="h-32 rounded-md border p-2">
+                  <div className="space-y-1">
+                    <p className="text-sm">CS101 - Intro to Computer Science</p>
+                    <p className="text-sm">MATH151 - Calculus I</p>
+                    <p className="text-sm">ENG101 - English Composition</p>
+                  </div>
+                </ScrollArea>
               </div>
             </CardContent>
           </Card>
         </aside>
-      </div>
+
+        {/* Chat Section */}
+        <section className="flex-1 flex flex-col">
+          <Card className="flex-1">
+            <CardContent className="p-4 h-full flex flex-col">
+              <ScrollArea className="flex-1 pr-4">
+                <div className="space-y-4">
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${
+                        message.sender === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[80%] rounded-lg p-3 ${
+                          message.sender === 'user'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        }`}
+                      >
+                        <p className="text-sm">{message.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+
+              <div className="mt-4 flex gap-2">
+                <Button variant="outline" size="icon">
+                  <Mic className="h-4 w-4" />
+                </Button>
+                <Input
+                  placeholder="Ask about courses, requirements, or scheduling..."
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                />
+                <Button onClick={handleSend}>Send</Button>
+              </div>
+
+              <div className="mt-2 flex justify-between items-center">
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Clear
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    <Save className="h-4 w-4 mr-2" />
+                    Save
+                  </Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="icon">
+                    <ThumbsUp className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon">
+                    <ThumbsDown className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* Right Sidebar */}
+        <aside className="w-72 hidden xl:block">
+          <Card>
+            <CardContent className="p-4 space-y-4">
+              <h3 className="font-semibold">Quick Course Info</h3>
+              <ScrollArea className="h-[calc(100vh-12rem)]">
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i}>
+                      <CardContent className="p-3 space-y-2">
+                        <h4 className="font-medium">CS{200 + i}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Data Structures {i}
+                        </p>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm">3 credits</span>
+                          <Button variant="outline" size="sm">
+                            Details
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </aside>
+      </main>
 
       {/* Footer */}
-      <footer className="border-t mt-8">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            <Button variant="link" className="text-muted-foreground">
-              <HelpCircle className="mr-2 h-4 w-4" />
-              Need help? Contact us
+      <footer className="border-t">
+        <div className="container py-4 flex justify-between items-center">
+          <div className="text-sm text-muted-foreground">
+            © 2024 RUNetworking. All rights reserved.
+          </div>
+          <div className="flex gap-4">
+            <Button variant="link" size="sm">
+              Course Catalog
             </Button>
-            <p className="text-sm text-muted-foreground">
-              Course information is up-to-date as of April 2024, but please verify with official Rutgers resources.
-            </p>
+            <Button variant="link" size="sm">
+              Advising
+            </Button>
+            <Button variant="link" size="sm">
+              Tutoring
+            </Button>
           </div>
         </div>
       </footer>
