@@ -50,7 +50,7 @@ export default function Home() {
   ]);
   const [inputValue, setInputValue] = useState('');
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputValue.trim()) return;
 
     setMessages((prev) => [
@@ -62,7 +62,38 @@ export default function Home() {
         timestamp: new Date(),
       },
     ]);
-    setInputValue('');
+
+    const userMessage = inputValue; //save the user's input before clearing input field
+    setInputValue(''); //clear the input field
+
+    try {
+        //send user message to backend
+        const res = await fetch('/api/rag', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: userMessage }),
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        //add assistant response to chat
+        setMessages((prev) => [
+            ...prev,
+            {
+                id: Date.now() + 1,
+                content: data.response,
+                sender: 'bot',
+                timestamp: new Date(),
+            },
+        ]);
+    }   catch (error) {
+        console.error('Error fetching assistant response:', error);
+    }
+
   };
 
   return (
