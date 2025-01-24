@@ -50,50 +50,69 @@ export default function Home() {
   ]);
   const [inputValue, setInputValue] = useState('');
 
+  // Updated handleSend to include the entire conversation in the request body:
   const handleSend = async () => {
     if (!inputValue.trim()) return;
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        content: inputValue,
-        sender: 'user',
-        timestamp: new Date(),
-      },
-    ]);
+    // Prepare the new message
+    const newMessage: Message = {
+      id: Date.now(),
+      content: inputValue,
+      sender: 'user',
+      timestamp: new Date(),
+    };
 
-    const userMessage = inputValue; //save the user's input before clearing input field
-    setInputValue(''); //clear the input field
+    // Build an updated local conversation
+    const updatedMessages = [...messages, newMessage];
+
+    // Update state
+    setMessages(updatedMessages);
+    const userMessage = inputValue;
+    setInputValue('');
 
     try {
-        //send user message to backend
-        const res = await fetch('/api/rag', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: userMessage }),
-        });
+      // Send the entire conversation to your backend
+      const res = await fetch('/api/rag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userMessage,
+          messages: updatedMessages, // Send the whole array
+        }),
+      });
 
-        const data = await res.json();
+      if (!res.ok) {
+        throw new Error(`Request failed with status ${res.status}`);
+      }
 
-        if (data.error) {
-            throw new Error(data.error);
-        }
+      // Read the streaming/text response
+      const reader = res.body?.getReader();
+      if (!reader) return;
 
-        //add assistant response to chat
-        setMessages((prev) => [
-            ...prev,
-            {
-                id: Date.now() + 1,
-                content: data.response,
-                sender: 'bot',
-                timestamp: new Date(),
-            },
-        ]);
-    }   catch (error) {
-        console.error('Error fetching assistant response:', error);
+      const decoder = new TextDecoder();
+      let botMessage = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        let chunk = decoder.decode(value);
+        chunk = chunk.replace(/^data:\s+/gm, '');
+        botMessage += chunk;
+      }
+
+      // Add assistant response to the conversation
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          content: botMessage,
+          sender: 'bot',
+          timestamp: new Date(),
+        },
+      ]);
+    } catch (error) {
+      console.error('Error fetching assistant response:', error);
     }
-
   };
 
   return (
@@ -135,7 +154,7 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="container pt-20 pb-4 flex gap-4 h-[calc(100vh-1rem)]">
+      <main className="container pt-20 pb-4 flex gap-4 h-[calc(100vh-4rem)] overflow-hidden">
         {/* Left Sidebar */}
         <aside className="w-64 hidden lg:block">
           <Card>
@@ -193,9 +212,9 @@ export default function Home() {
         </aside>
 
         {/* Chat Section */}
-        <section className="flex-1 flex flex-col">
-          <Card className="flex-1">
-            <CardContent className="p-4 h-full flex flex-col">
+        <section className="flex-1 flex flex-col h-full overflow-hidden">
+          <Card className="flex-1 overflow-hidden">
+            <CardContent className="p-4 h-full flex flex-col overflow-hidden">
               <ScrollArea className="flex-1 pr-4">
                 <div className="space-y-4">
                   {messages.map((message) => (
