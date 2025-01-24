@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
-import { Avatar } from '@/components/ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   Mic,
   Settings2,
@@ -31,6 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
 
 interface Message {
   id: number;
@@ -49,12 +50,37 @@ export default function Home() {
     },
   ]);
   const [inputValue, setInputValue] = useState('');
+  const [isBotTyping, setIsBotTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Updated handleSend to include the entire conversation in the request body:
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Function to clean the bot's response
+  const cleanResponse = (response: string) => {
+    // Remove [TOOL] and other unwanted prefixes
+    response = response.replace(/^\[TOOL\]\s*/, '');
+
+    // Remove artifacts like 【7:3†requirements.txt】
+    response = response.replace(/【\d+:\d+†[^】]+】/g, '');
+
+    // Replace multiple newlines with a single space
+    response = response.replace(/\n+/g, ' ');
+
+    // Trim leading and trailing spaces
+    response = response.trim();
+
+    return response;
+  };
+
   const handleSend = async () => {
     if (!inputValue.trim()) return;
 
-    // Prepare the new message
     const newMessage: Message = {
       id: Date.now(),
       content: inputValue,
@@ -62,22 +88,19 @@ export default function Home() {
       timestamp: new Date(),
     };
 
-    // Build an updated local conversation
     const updatedMessages = [...messages, newMessage];
-
-    // Update state
     setMessages(updatedMessages);
     const userMessage = inputValue;
     setInputValue('');
 
+    setIsBotTyping(true);
     try {
-      // Send the entire conversation to your backend
       const res = await fetch('/api/rag', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userMessage,
-          messages: updatedMessages, // Send the whole array
+          messages: updatedMessages,
         }),
       });
 
@@ -85,7 +108,6 @@ export default function Home() {
         throw new Error(`Request failed with status ${res.status}`);
       }
 
-      // Read the streaming/text response
       const reader = res.body?.getReader();
       if (!reader) return;
 
@@ -100,7 +122,9 @@ export default function Home() {
         botMessage += chunk;
       }
 
-      // Add assistant response to the conversation
+      // Clean the bot's response
+      botMessage = cleanResponse(botMessage);
+
       setMessages((prev) => [
         ...prev,
         {
@@ -112,6 +136,8 @@ export default function Home() {
       ]);
     } catch (error) {
       console.error('Error fetching assistant response:', error);
+    } finally {
+      setIsBotTyping(false);
     }
   };
 
@@ -224,17 +250,51 @@ export default function Home() {
                         message.sender === 'user' ? 'justify-end' : 'justify-start'
                       }`}
                     >
-                      <div
-                        className={`max-w-[80%] rounded-lg p-3 ${
-                          message.sender === 'user'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
-                        }`}
-                      >
-                        <p className="text-sm">{message.content}</p>
+                      <div className="flex items-end gap-2">
+                        {message.sender === 'bot' && (
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src="/bot-avatar.png" />
+                            <AvatarFallback>B</AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div
+                          className={`max-w-[80%] rounded-lg p-3 ${
+                            message.sender === 'user'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted'
+                          }`}
+                        >
+                          {/* Use ReactMarkdown to render the message content */}
+                          <ReactMarkdown className="text-sm prose">
+                            {message.content}
+                          </ReactMarkdown>
+                          <span className="text-xs text-muted-foreground">
+                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        {message.sender === 'user' && (
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src="/user-avatar.png" />
+                            <AvatarFallback>U</AvatarFallback>
+                          </Avatar>
+                        )}
                       </div>
                     </div>
                   ))}
+                  {isBotTyping && (
+                    <div className="flex justify-start">
+                      <div className="flex items-end gap-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src="/bot-avatar.png" />
+                          <AvatarFallback>B</AvatarFallback>
+                        </Avatar>
+                        <div className="max-w-[80%] rounded-lg p-3 bg-muted">
+                          <p className="text-sm">Typing...</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
 
