@@ -57,8 +57,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // (Optionally call stream.start() if required by your environment)
-    // stream.start();
 
     return new Response(readableStream, {
       headers: {
