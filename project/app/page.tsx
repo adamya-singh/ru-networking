@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { GraduationCap, Calendar, ArrowRight } from "lucide-react";
 import Link from "next/link";
@@ -20,7 +22,7 @@ export default function Home() {
               and stay organized throughout your semester at Rutgers University.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
-              <Link href="/schedule">
+              <Link href="/scheduling-assistant">
                 <Button size="lg" className="bg-scarlet hover:bg-scarlet/90 gap-2">
                   Start Planning <ArrowRight className="h-4 w-4" />
                 </Button>
@@ -48,7 +50,9 @@ export default function Home() {
                   </div>
                   <div className="flex flex-auto flex-col">
                     <h3 className="text-lg font-semibold leading-8 text-foreground">{feature.name}</h3>
-                    <p className="mt-1 flex flex-auto text-base leading-7 text-muted-foreground">{feature.description}</p>
+                    <p className="mt-1 flex flex-auto text-base leading-7 text-muted-foreground">
+                      {feature.description}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -62,18 +66,21 @@ export default function Home() {
 
 const features = [
   {
-    name: 'Visual Schedule Builder',
-    description: 'Drag and drop interface to build your perfect schedule. Visualize your weekly calendar and avoid time conflicts.',
+    name: "Visual Schedule Builder",
+    description:
+      "Drag and drop interface to build your perfect schedule. Visualize your weekly calendar and avoid time conflicts.",
     icon: Calendar,
   },
   {
-    name: 'Course Requirements Tracking',
-    description: 'Keep track of your major requirements and progress towards your degree with our smart tracking system.',
+    name: "Course Requirements Tracking",
+    description:
+      "Keep track of your major requirements and progress towards your degree with our smart tracking system.",
     icon: GraduationCap,
   },
   {
-    name: 'Real-time Availability',
-    description: 'Get instant updates on course availability and waitlist status to make informed decisions.',
+    name: "Real-time Availability",
+    description:
+      "Get instant updates on course availability and waitlist status to make informed decisions.",
     icon: ArrowRight,
   },
 ];

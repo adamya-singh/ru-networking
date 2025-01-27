@@ -17,16 +17,16 @@ export default function SignInPage() {
       }
 
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
+        provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
-        }
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
-      
+
       if (error) throw error;
-    } catch (error) {
-      console.error('Error signing in with Google:', error);
-      setError('Failed to sign in with Google. Please try again.');
+    } catch (error: any) {
+      console.error("Error signing in with Google:", error?.message || error);
+      setError(error?.message || "Failed to sign in with Google. Please try again.");
     }
   };
 
@@ -45,7 +45,6 @@ export default function SignInPage() {
           <Button
             onClick={handleGoogleSignIn}
             className="w-full flex items-center justify-center gap-2"
-            variant="outline"
           >
             <Chrome className="h-5 w-5" />
             Sign in with Google
