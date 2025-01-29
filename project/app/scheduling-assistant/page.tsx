@@ -1,7 +1,5 @@
 'use client';
 
-// 1. Remove the old useState-based chat logic imports (ReactMarkdown, useRef, etc.) if not needed
-//    Keep only what you still use (e.g., Button, Input, etc.)
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,7 +9,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import ThemeToggle from '@/components/ThemeToggle';
+import ThemeToggle from '@/components/themetoggle';
+import Link from "next/link";
 import {
   Mic,
   Settings2,
@@ -37,26 +36,8 @@ import {
 // 2. Import your Chat component
 import Chat from '../../components/chat'; // <-- Adjust the path as needed
 
-// 3. Remove any “messages” interface or other chat states that are no longer used
-//    (Everything that was used for the old chat logic is no longer needed.)
-//
-// interface Message {
-//   id: number;
-//   content: string;
-//   sender: 'user' | 'bot';
-//   timestamp: Date;
-// }
-
 export default function Home() {
-  // 4. Remove any leftover chat states and handlers:
-  //
-  // const [messages, setMessages] = useState<Message[]>([ ... ]);
-  // const [inputValue, setInputValue] = useState('');
-  // const [isBotTyping, setIsBotTyping] = useState(false);
-  // const messagesEndRef = useRef<HTMLDivElement>(null);
-  //
-  // const handleSend = async () => { ... }
-  // const cleanResponse = (response: string) => { ... }
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,7 +49,9 @@ export default function Home() {
             <span className="font-semibold text-lg">RUNetworking</span>
           </div>
           <nav className="hidden md:flex items-center space-x-6">
+          <Link href="/">
             <Button variant="ghost">Dashboard</Button>
+          </Link>
             <Button variant="ghost">Find Classmates</Button>
             <Button variant="ghost">Help</Button>
             <ThemeToggle />
@@ -159,7 +142,7 @@ export default function Home() {
         <section className="flex-1 flex flex-col h-full overflow-hidden">
           <Card className="flex-1 overflow-hidden">
             <CardContent className="p-4 h-full flex flex-col overflow-hidden">
-              {/* 5. Just drop in your Chat component. That’s it! */}
+              {/* Just drop in your Chat component. That’s it! */}
               <Chat />
             </CardContent>
           </Card>
