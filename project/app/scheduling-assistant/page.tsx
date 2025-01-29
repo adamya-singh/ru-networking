@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import ThemeToggle from '@/components/ThemeToggle';
 import {
   Mic,
   Settings2,
@@ -70,6 +71,7 @@ export default function Home() {
             <Button variant="ghost">Dashboard</Button>
             <Button variant="ghost">Find Classmates</Button>
             <Button variant="ghost">Help</Button>
+            <ThemeToggle />
           </nav>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
