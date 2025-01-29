@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import styles from "./chat.module.css";
+import styles from "./chat.module.css"; // Keep your CSS module import
 import { AssistantStream } from "openai/lib/AssistantStream";
 import Markdown from "react-markdown";
 // @ts-expect-error - no types for this yet
@@ -13,27 +13,38 @@ type MessageProps = {
   text: string;
 };
 
+// 1) Wrap user messages in a “container” so we can float them to the right
 const UserMessage = ({ text }: { text: string }) => {
-  return <div className={styles.userMessage}>{text}</div>;
-};
-
-const AssistantMessage = ({ text }: { text: string }) => {
   return (
-    <div className={styles.assistantMessage}>
-      <Markdown>{text}</Markdown>
+    <div className={styles.userMessageContainer}>
+      <div className={styles.userMessage}>{text}</div>
     </div>
   );
 };
 
+// 2) Wrap assistant messages in a “container” so they float left
+const AssistantMessage = ({ text }: { text: string }) => {
+  return (
+    <div className={styles.assistantMessageContainer}>
+      <div className={styles.assistantMessage}>
+        <Markdown>{text}</Markdown>
+      </div>
+    </div>
+  );
+};
+
+// 3) Code messages can re-use the assistant container if you like, or a different one
 const CodeMessage = ({ text }: { text: string }) => {
   return (
-    <div className={styles.codeMessage}>
-      {text.split("\n").map((line, index) => (
-        <div key={index}>
-          <span>{`${index + 1}. `}</span>
-          {line}
-        </div>
-      ))}
+    <div className={styles.assistantMessageContainer}>
+      <div className={styles.codeMessage}>
+        {text.split("\n").map((line, index) => (
+          <div key={index}>
+            <span>{`${index + 1}. `}</span>
+            {line}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -86,7 +97,7 @@ const Chat = ({
     createThread();
   }, []);
 
-  const sendMessage = async (text) => {
+  const sendMessage = async (text: string) => {
     const response = await fetch(
       `/api/assistants/threads/${threadId}/messages`,
       {
@@ -100,7 +111,7 @@ const Chat = ({
     handleReadableStream(stream);
   };
 
-  const submitActionResult = async (runId, toolCallOutputs) => {
+  const submitActionResult = async (runId: string, toolCallOutputs: any) => {
     const response = await fetch(
       `/api/assistants/threads/${threadId}/actions`,
       {
@@ -118,7 +129,7 @@ const Chat = ({
     handleReadableStream(stream);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!userInput.trim()) return;
     sendMessage(userInput);
@@ -133,48 +144,41 @@ const Chat = ({
 
   /* Stream Event Handlers */
 
-  // textCreated - create new assistant message
   const handleTextCreated = () => {
     appendMessage("assistant", "");
   };
 
-  // textDelta - append text to last assistant message
-  const handleTextDelta = (delta) => {
+  const handleTextDelta = (delta: any) => {
     if (delta.value != null) {
       appendToLastMessage(delta.value);
-    };
+    }
     if (delta.annotations != null) {
       annotateLastMessage(delta.annotations);
     }
   };
 
-  // imageFileDone - show image in chat
-  const handleImageFileDone = (image) => {
+  const handleImageFileDone = (image: any) => {
     appendToLastMessage(`\n![${image.file_id}](/api/files/${image.file_id})\n`);
-  }
+  };
 
-  // toolCallCreated - log new tool call
-  const toolCallCreated = (toolCall) => {
-    if (toolCall.type != "code_interpreter") return;
+  const toolCallCreated = (toolCall: any) => {
+    if (toolCall.type !== "code_interpreter") return;
     appendMessage("code", "");
   };
 
-  // toolCallDelta - log delta and snapshot for the tool call
-  const toolCallDelta = (delta, snapshot) => {
-    if (delta.type != "code_interpreter") return;
+  const toolCallDelta = (delta: any, snapshot: any) => {
+    if (delta.type !== "code_interpreter") return;
     if (!delta.code_interpreter.input) return;
     appendToLastMessage(delta.code_interpreter.input);
   };
 
-  // handleRequiresAction - handle function call
   const handleRequiresAction = async (
     event: AssistantStreamEvent.ThreadRunRequiresAction
   ) => {
     const runId = event.data.id;
     const toolCalls = event.data.required_action.submit_tool_outputs.tool_calls;
-    // loop over tool calls and call function handler
     const toolCallOutputs = await Promise.all(
-      toolCalls.map(async (toolCall) => {
+      toolCalls.map(async (toolCall: any) => {
         const result = await functionCallHandler(toolCall);
         return { output: result, tool_call_id: toolCall.id };
       })
@@ -183,7 +187,6 @@ const Chat = ({
     submitActionResult(runId, toolCallOutputs);
   };
 
-  // handleRunCompleted - re-enable the input form
   const handleRunCompleted = () => {
     setInputDisabled(false);
   };
@@ -200,7 +203,7 @@ const Chat = ({
     stream.on("toolCallCreated", toolCallCreated);
     stream.on("toolCallDelta", toolCallDelta);
 
-    // events without helpers yet (e.g. requires_action and run.done)
+    // requires_action and run.done
     stream.on("event", (event) => {
       if (event.event === "thread.run.requires_action")
         handleRequiresAction(event);
@@ -208,13 +211,9 @@ const Chat = ({
     });
   };
 
-  /*
-    =======================
-    === Utility Helpers ===
-    =======================
-  */
+  /* Utility Helpers */
 
-  const appendToLastMessage = (text) => {
+  const appendToLastMessage = (text: string) => {
     setMessages((prevMessages) => {
       const lastMessage = prevMessages[prevMessages.length - 1];
       const updatedLastMessage = {
@@ -225,28 +224,25 @@ const Chat = ({
     });
   };
 
-  const appendMessage = (role, text) => {
+  const appendMessage = (role: "assistant" | "user" | "code", text: string) => {
     setMessages((prevMessages) => [...prevMessages, { role, text }]);
   };
 
-  const annotateLastMessage = (annotations) => {
+  const annotateLastMessage = (annotations: any[]) => {
     setMessages((prevMessages) => {
       const lastMessage = prevMessages[prevMessages.length - 1];
-      const updatedLastMessage = {
-        ...lastMessage,
-      };
+      const updatedLastMessage = { ...lastMessage };
       annotations.forEach((annotation) => {
-        if (annotation.type === 'file_path') {
+        if (annotation.type === "file_path") {
           updatedLastMessage.text = updatedLastMessage.text.replaceAll(
             annotation.text,
             `/api/files/${annotation.file_path.file_id}`
           );
         }
-      })
+      });
       return [...prevMessages.slice(0, -1), updatedLastMessage];
     });
-    
-  }
+  };
 
   return (
     <div className={styles.chatContainer}>

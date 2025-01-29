@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+// 1. Remove the old useState-based chat logic imports (ReactMarkdown, useRef, etc.) if not needed
+//    Keep only what you still use (e.g., Button, Input, etc.)
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -31,115 +32,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import ReactMarkdown from 'react-markdown'; // Import ReactMarkdown
 
-interface Message {
-  id: number;
-  content: string;
-  sender: 'user' | 'bot';
-  timestamp: Date;
-}
+// 2. Import your Chat component
+import Chat from '../../components/chat'; // <-- Adjust the path as needed
+
+// 3. Remove any “messages” interface or other chat states that are no longer used
+//    (Everything that was used for the old chat logic is no longer needed.)
+//
+// interface Message {
+//   id: number;
+//   content: string;
+//   sender: 'user' | 'bot';
+//   timestamp: Date;
+// }
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      content: "Hi! I'm your academic assistant. How can I help you plan your schedule today?",
-      sender: 'bot',
-      timestamp: new Date(),
-    },
-  ]);
-  const [inputValue, setInputValue] = useState('');
-  const [isBotTyping, setIsBotTyping] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Function to clean the bot's response
-  const cleanResponse = (response: string) => {
-    // Remove [TOOL] and other unwanted prefixes
-    response = response.replace(/^\[TOOL\]\s*/, '');
-
-    // Remove artifacts like 【7:3†requirements.txt】
-    response = response.replace(/【\d+:\d+†[^】]+】/g, '');
-
-    // Replace multiple newlines with a single space
-    response = response.replace(/\n+/g, ' ');
-
-    // Trim leading and trailing spaces
-    response = response.trim();
-
-    return response;
-  };
-
-  const handleSend = async () => {
-    if (!inputValue.trim()) return;
-
-    const newMessage: Message = {
-      id: Date.now(),
-      content: inputValue,
-      sender: 'user',
-      timestamp: new Date(),
-    };
-
-    const updatedMessages = [...messages, newMessage];
-    setMessages(updatedMessages);
-    const userMessage = inputValue;
-    setInputValue('');
-
-    setIsBotTyping(true);
-    try {
-      const res = await fetch('/api/rag', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userMessage,
-          messages: updatedMessages,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Request failed with status ${res.status}`);
-      }
-
-      const reader = res.body?.getReader();
-      if (!reader) return;
-
-      const decoder = new TextDecoder();
-      let botMessage = '';
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        let chunk = decoder.decode(value);
-        chunk = chunk.replace(/^data:\s+/gm, '');
-        botMessage += chunk;
-      }
-
-      // Clean the bot's response
-      botMessage = cleanResponse(botMessage);
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now() + 1,
-          content: botMessage,
-          sender: 'bot',
-          timestamp: new Date(),
-        },
-      ]);
-    } catch (error) {
-      console.error('Error fetching assistant response:', error);
-    } finally {
-      setIsBotTyping(false);
-    }
-  };
+  // 4. Remove any leftover chat states and handlers:
+  //
+  // const [messages, setMessages] = useState<Message[]>([ ... ]);
+  // const [inputValue, setInputValue] = useState('');
+  // const [isBotTyping, setIsBotTyping] = useState(false);
+  // const messagesEndRef = useRef<HTMLDivElement>(null);
+  //
+  // const handleSend = async () => { ... }
+  // const cleanResponse = (response: string) => { ... }
 
   return (
     <div className="min-h-screen bg-background">
@@ -241,96 +157,8 @@ export default function Home() {
         <section className="flex-1 flex flex-col h-full overflow-hidden">
           <Card className="flex-1 overflow-hidden">
             <CardContent className="p-4 h-full flex flex-col overflow-hidden">
-              <ScrollArea className="flex-1 pr-4">
-                <div className="space-y-4">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${
-                        message.sender === 'user' ? 'justify-end' : 'justify-start'
-                      }`}
-                    >
-                      <div className="flex items-end gap-2">
-                        {message.sender === 'bot' && (
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src="/bot-avatar.png" />
-                            <AvatarFallback>B</AvatarFallback>
-                          </Avatar>
-                        )}
-                        <div
-                          className={`max-w-[80%] rounded-lg p-3 ${
-                            message.sender === 'user'
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted'
-                          }`}
-                        >
-                          {/* Use ReactMarkdown to render the message content */}
-                          <ReactMarkdown className="text-sm prose">
-                            {message.content}
-                          </ReactMarkdown>
-                          <span className="text-xs text-muted-foreground">
-                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                        {message.sender === 'user' && (
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src="/user-avatar.png" />
-                            <AvatarFallback>U</AvatarFallback>
-                          </Avatar>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {isBotTyping && (
-                    <div className="flex justify-start">
-                      <div className="flex items-end gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src="/bot-avatar.png" />
-                          <AvatarFallback>B</AvatarFallback>
-                        </Avatar>
-                        <div className="max-w-[80%] rounded-lg p-3 bg-muted">
-                          <p className="text-sm">Typing...</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              </ScrollArea>
-
-              <div className="mt-4 flex gap-2">
-                <Button variant="outline" size="icon">
-                  <Mic className="h-4 w-4" />
-                </Button>
-                <Input
-                  placeholder="Ask about courses, requirements, or scheduling..."
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                />
-                <Button onClick={handleSend}>Send</Button>
-              </div>
-
-              <div className="mt-2 flex justify-between items-center">
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Clear
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Save className="h-4 w-4 mr-2" />
-                    Save
-                  </Button>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="icon">
-                    <ThumbsUp className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <ThumbsDown className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              {/* 5. Just drop in your Chat component. That’s it! */}
+              <Chat />
             </CardContent>
           </Card>
         </section>
