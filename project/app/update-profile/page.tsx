@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+// 1) Replace import from auth-helpers with your shared supabase client import
+import { supabase } from "@/lib/supabase";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -23,17 +25,24 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 
 const currentYear = new Date().getFullYear();
+
 const formSchema = z.object({
   graduation_year: z.number().min(currentYear).max(currentYear + 6),
   major: z.string().min(1, "Major is required"),
   minor: z.string().optional(),
   interests: z.string().min(1, "Interests are required"),
-  professional_aspirations: z.string().min(1, "Professional aspirations are required"),
-  bio: z.string().min(1, "Bio is required").max(500, "Bio must be less than 500 characters"),
+  professional_aspirations: z
+    .string()
+    .min(1, "Professional aspirations are required"),
+  bio: z
+    .string()
+    .min(1, "Bio is required")
+    .max(500, "Bio must be less than 500 characters"),
 });
 
 export default function ProfilePage() {
-  const supabase = createClientComponentClient();
+  // 2) Remove createClientComponentClient usage; we now rely on the shared supabase
+  // const supabase = createClientComponentClient();
   const [loading, setLoading] = useState(true);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -50,7 +59,10 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const loadProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (session?.user?.id) {
         const { data: profile } = await supabase
           .from("profiles")
@@ -66,23 +78,24 @@ export default function ProfilePage() {
     };
 
     loadProfile();
-  }, [supabase, form]);
+  }, [form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (!session?.user?.id) {
         toast.error("Please sign in to update your profile");
         return;
       }
 
-      const { error } = await supabase
-        .from("profiles")
-        .upsert({
-          id: session.user.id,
-          ...values,
-          updated_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.from("profiles").upsert({
+        id: session.user.id,
+        ...values,
+        updated_at: new Date().toISOString(),
+      });
 
       if (error) throw error;
       toast.success("Profile updated successfully!");
@@ -93,7 +106,11 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        Loading...
+      </div>
+    );
   }
 
   return (
@@ -108,11 +125,16 @@ export default function ProfilePage() {
               <GraduationCap className="w-12 h-12 text-primary" />
             </div>
             <h1 className="text-3xl font-bold text-center">RU Profile</h1>
-            <p className="text-center text-muted-foreground mt-2">Build your Rutgers network presence</p>
+            <p className="text-center text-muted-foreground mt-2">
+              Build your Rutgers network presence
+            </p>
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
@@ -124,7 +146,13 @@ export default function ProfilePage() {
                           Graduation Year
                         </FormLabel>
                         <FormControl>
-                          <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value))
+                            }
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

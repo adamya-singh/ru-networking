@@ -46,7 +46,7 @@ export default function Home() {
         <div className="bg-muted py-24 sm:py-32">
           <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <div className="mx-auto max-w-2xl lg:text-center">
-              <h2 className="text-base font-semibold leading-7 text-primary">RU Connected</h2>
+              <h2 className="text-base font-semibold leading-7 text-primary">RU Networking</h2>
               <p className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                 Everything you need to thrive at Rutgers
               </p>
