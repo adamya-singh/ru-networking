@@ -6,8 +6,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { GraduationCap, BookOpen, Heart, Target, User } from "lucide-react";
-
 import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 import {
   Form,
   FormControl,
@@ -241,25 +241,7 @@ export default function ProfilePage() {
         </Card>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t">
-        <div className="container py-4 flex justify-between items-center">
-          <div className="text-sm text-muted-foreground">
-            © 2024 RUNetworking. All rights reserved.
-          </div>
-          <div className="flex gap-4">
-            <Button variant="link" size="sm">
-              Course Catalog
-            </Button>
-            <Button variant="link" size="sm">
-              Advising
-            </Button>
-            <Button variant="link" size="sm">
-              Tutoring
-            </Button>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

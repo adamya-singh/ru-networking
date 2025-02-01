@@ -9,8 +9,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import ThemeToggle from '@/components/themetoggle';
 import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 import Link from "next/link";
 import {
   Mic,
@@ -142,25 +142,7 @@ export default function Home() {
         </aside>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t">
-        <div className="container py-4 flex justify-between items-center">
-          <div className="text-sm text-muted-foreground">
-            © 2024 RUNetworking. All rights reserved.
-          </div>
-          <div className="flex gap-4">
-            <Button variant="link" size="sm">
-              Course Catalog
-            </Button>
-            <Button variant="link" size="sm">
-              Advising
-            </Button>
-            <Button variant="link" size="sm">
-              Tutoring
-            </Button>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
