@@ -11,12 +11,12 @@ export async function middleware(req: NextRequest) {
   } = await supabase.auth.getSession();
 
   // Protect routes that require authentication
-  if (!session && (
+  /*if (!session && (
     req.nextUrl.pathname.startsWith('/schedule') ||
     req.nextUrl.pathname.startsWith('/saved-schedules')
   )) {
     return NextResponse.redirect(new URL('/signin', req.url));
-  }
+  }*/
 
   return res;
 }
