@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Plus, Calendar } from "lucide-react";
+import { Header } from "@/components/header";
+import { Footer } from "@/components/footer";
 
 export default function SchedulePage() {
   const [selectedCourses, setSelectedCourses] = useState<Course[]>([]);
@@ -16,6 +18,7 @@ export default function SchedulePage() {
 
   return (
     <div className="container mx-auto py-8">
+      <Header />
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Course Search Section */}
         <div className="lg:col-span-1">
@@ -89,6 +92,7 @@ export default function SchedulePage() {
           </Card>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
