@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MessageSquare, Settings2, LogOut, User } from "lucide-react";
+import { MessageSquare, Settings2, LogOut, User, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -69,6 +69,12 @@ export function Header() {
           </Link>
           <Link href="/assistant">
             <Button variant="ghost">Assistant</Button>
+          </Link>
+          <Link href="/schedule">
+            <Button variant="ghost" className="gap-2">
+              <Calendar className="h-4 w-4" />
+              Create Schedule
+            </Button>
           </Link>
           <Button variant="ghost">Find Classmates</Button>
           <Button variant="ghost">Help</Button>

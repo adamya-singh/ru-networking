@@ -4,9 +4,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Plus, Calendar } from "lucide-react";
+import { Search, Plus, Calendar, BookMarked } from "lucide-react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import Link from "next/link";
 
 export default function SchedulePage() {
   const [selectedCourses, setSelectedCourses] = useState<Course[]>([]);
@@ -17,81 +18,104 @@ export default function SchedulePage() {
   };
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Course Search Section */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Search Courses</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Search courses..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1"
-                />
-                <Button size="icon">
-                  <Search className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="mt-4 space-y-2">
-                {sampleCourses.map((course) => (
-                  <Card key={course.id} className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium">{course.code}</h3>
-                        <p className="text-sm text-muted-foreground">{course.name}</p>
-                      </div>
-                      <Button size="sm" variant="outline" onClick={() => addCourse(course)}>
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      
+      <main className="flex-1 container py-20">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Calendar className="h-8 w-8 text-primary" />
+            Create Schedule
+          </h1>
+          <Link href="/saved-schedules">
+            <Button variant="outline" className="gap-2">
+              <BookMarked className="h-4 w-4" />
+              Saved Schedules
+            </Button>
+          </Link>
         </div>
 
-        {/* Schedule View Section */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Weekly Schedule
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-6 gap-4">
-                <div className="col-span-1"></div>
-                {days.map((day) => (
-                  <div key={day} className="text-center font-medium">
-                    {day}
-                  </div>
-                ))}
-                {hours.map((hour) => (
-                  <div key={`row-${hour}`} className="contents">
-                    <div className="text-right text-sm text-muted-foreground">
-                      {hour}:00
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          {/* Course Search Section */}
+          <div className="lg:col-span-1">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-5 w-5" />
+                  Search Courses
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Search courses..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button size="icon">
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="mt-4 space-y-2">
+                  {sampleCourses.map((course) => (
+                    <Card key={course.id} className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium">{course.code}</h3>
+                          <p className="text-sm text-muted-foreground">{course.name}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {course.credits} credits • {course.schedule.days.join(", ")} • {course.schedule.startTime}-{course.schedule.endTime}
+                          </p>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => addCourse(course)}>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Schedule View Section */}
+          <div className="lg:col-span-2">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Weekly Schedule
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-6 gap-4">
+                  <div className="col-span-1"></div>
+                  {days.map((day) => (
+                    <div key={day} className="text-center font-medium">
+                      {day}
                     </div>
-                    {days.map((day) => (
-                      <div
-                        key={`${day}-${hour}`}
-                        className="h-12 border-t border-border"
-                      ></div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  ))}
+                  {hours.map((hour) => (
+                    <div key={`row-${hour}`} className="contents">
+                      <div className="text-right text-sm text-muted-foreground">
+                        {hour}:00
+                      </div>
+                      {days.map((day) => (
+                        <div
+                          key={`${day}-${hour}`}
+                          className="h-12 border-t border-border"
+                        ></div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      </main>
+
       <Footer />
     </div>
   );
