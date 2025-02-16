@@ -5,10 +5,12 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Plus, Calendar, BookMarked, X, Clock } from "lucide-react";
+import { Search, Calendar, BookMarked, X, Clock, MessageSquare } from "lucide-react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import Link from "next/link";
+import Chat from "@/components/chat";
+import WeeklySchedule from "@/components/weekly-schedule";
 
 interface MeetingTime {
   meetingday: string;
@@ -141,7 +143,7 @@ export default function SchedulePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
           {/* Course Search Section */}
           <div className="lg:col-span-1">
             <Card className="h-full">
@@ -261,34 +263,21 @@ export default function SchedulePage() {
 
           {/* Schedule View Section */}
           <div className="lg:col-span-2">
-            <Card className="h-full">
+            <WeeklySchedule />
+          </div>
+
+          {/* Chat Section */}
+          <div className="lg:col-span-1 lg:h-[calc(100vh-12rem)] lg:sticky lg:top-20">
+            <Card className="h-full flex flex-col">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Weekly Schedule
+                  <MessageSquare className="h-5 w-5" />
+                  Course Assistant
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-6 gap-4">
-                  <div className="col-span-1"></div>
-                  {days.map((day) => (
-                    <div key={day} className="text-center font-medium">
-                      {day}
-                    </div>
-                  ))}
-                  {hours.map((hour) => (
-                    <div key={`row-${hour}`} className="contents">
-                      <div className="text-right text-sm text-muted-foreground">
-                        {hour}:00
-                      </div>
-                      {days.map((day) => (
-                        <div
-                          key={`${day}-${hour}`}
-                          className="h-12 border-t border-border"
-                        ></div>
-                      ))}
-                    </div>
-                  ))}
+              <CardContent className="flex-1 p-0 overflow-hidden">
+                <div className="h-full">
+                  <Chat />
                 </div>
               </CardContent>
             </Card>
@@ -300,9 +289,6 @@ export default function SchedulePage() {
     </div>
   );
 }
-
-const days = ["Mon", "Tue", "Wed", "Thu", "Fri"];
-const hours = Array.from({ length: 12 }, (_, i) => i + 8); // 8 AM - 8 PM
 
 interface Course {
   id: string;
