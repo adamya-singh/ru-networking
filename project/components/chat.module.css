@@ -16,7 +16,7 @@
   flex: 1;
   overflow-y: auto;
   margin-bottom: 1rem;
-  padding: 1rem;
+  padding: 0.75rem;
   /* Add some padding to keep messages from hugging the edges */
 }
 
@@ -30,11 +30,12 @@
 .userMessage {
   background-color: #0066ff;
   color: #fff;
-  padding: 0.75rem 1rem;
-  border-radius: 16px;
-  max-width: 60%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  max-width: 80%;
   white-space: pre-wrap;
   line-height: 1.4;
+  font-size: 0.875rem;
 }
 
 /* ASSISTANT MESSAGE BUBBLE + WRAPPER */
@@ -47,11 +48,12 @@
 .assistantMessage {
   background-color: #2b2b2b;
   color: #fff;
-  padding: 0.75rem 1rem;
-  border-radius: 16px;
-  max-width: 60%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  max-width: 80%;
   white-space: pre-wrap;
   line-height: 1.4;
+  font-size: 0.875rem;
 }
 
 /* CODE MESSAGE gets a darker background and monospaced font */
@@ -59,11 +61,12 @@
   background-color: #1e1e1e;
   color: #c5c5c5;
   font-family: "Source Code Pro", monospace;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 8px;
-  max-width: 80%;
+  max-width: 90%;
   overflow-x: auto;
   line-height: 1.4;
+  font-size: 0.8125rem;
 }
 
 /* The input form area at the bottom */
@@ -72,7 +75,7 @@
   align-items: center;
   gap: 0.5rem;
   border-top: 1px solid #2b2b2b;
-  padding: 0.75rem;
+  padding: 0.625rem;
   background-color: #121212;
   width: 100%;
   box-sizing: border-box;
@@ -89,12 +92,14 @@
 .input {
   flex: 1;
   min-width: 0; /* Prevent input from overflowing */
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.75rem;
   background-color: #1e1e1e;
   border: 1px solid #333;
-  border-radius: 16px;
+  border-radius: 12px;
   color: #fff;
   outline: none;
+  font-size: 0.875rem;
+  height: 2.25rem;
 }
 
 /* The send button */
@@ -102,13 +107,15 @@
   background-color: #0066ff;
   color: #fff;
   border: none;
-  border-radius: 16px;
-  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  padding: 0.5rem 0.75rem;
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s ease;
   white-space: nowrap; /* Prevent button text from wrapping */
   flex-shrink: 0; /* Prevent button from shrinking */
+  height: 2.25rem;
+  font-size: 0.875rem;
 }
 
 .button:disabled {
