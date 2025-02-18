@@ -54,7 +54,7 @@ export default function SchedulePage() {
       console.error("Error fetching sections:", sectionsError);
       return;
     }
-  
+
     const sectionsWithMeetingTimes = await Promise.all(
       (sectionsData || []).map(async (section) => {
         const { data: meetingTimesData, error: meetingTimesError } = await supabase
@@ -128,7 +128,7 @@ export default function SchedulePage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      
+
       <main className="flex-1 container py-20">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -168,8 +168,8 @@ export default function SchedulePage() {
 
                 <div className="mt-4 space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto">
                   {searchResults.map((course) => (
-                    <Card 
-                      key={course.id} 
+                    <Card
+                      key={course.id}
                       className="p-4 cursor-pointer hover:bg-accent transition-colors"
                       onClick={() => fetchSections(course.id)}
                     >
@@ -201,8 +201,8 @@ export default function SchedulePage() {
                     <div className="bg-background border rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-y-auto p-6">
                       <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-semibold">Select Section</h2>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="icon"
                           onClick={() => {
                             setSelectedCourseForSections(null);

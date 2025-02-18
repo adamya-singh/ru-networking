@@ -76,7 +76,10 @@ export function Header() {
               Create Schedule
             </Button>
           </Link>
-          <Button variant="ghost">Find Classmates</Button>
+          <Link href="/find-classmates">
+            <Button variant="ghost">Find Classmates</Button>
+          </Link>
+
           <Button variant="ghost">Help</Button>
           <ThemeToggle />
         </nav>

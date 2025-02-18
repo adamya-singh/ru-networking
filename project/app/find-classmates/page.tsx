@@ -21,7 +21,7 @@ const classesData = [
   {
     id: "cs111",
     name: "CS 111 - Introduction to Computer Science",
-    professor: "Dr. Sarah Johnson",
+    professor: "Paula Centeno",
     schedule: "Mon, Wed • 10:00-11:20 AM",
     students: [
       { name: "Alex Thompson", instagram: "@alex_codes", email: "alex.t@rutgers.edu" },
@@ -31,8 +31,8 @@ const classesData = [
     ],
   },
   {
-    id: "cs112",
-    name: "CS 112 - Data Structures",
+    id: "cs436",
+    name: "Intro Data Science",
     professor: "Dr. Michael Chen",
     schedule: "Tue, Thu • 2:00-3:20 PM",
     students: [
@@ -43,9 +43,9 @@ const classesData = [
     ],
   },
   {
-    id: "cs211",
-    name: "CS 211 - Computer Architecture",
-    professor: "Dr. Robert Taylor",
+    id: "cs206",
+    name: "Intro To Discrete Structures II",
+    professor: "Dr. Hamidi",
     schedule: "Mon, Wed • 1:00-2:20 PM",
     students: [
       { name: "Oliver Martinez", instagram: "@oli_tech", email: "oliver.m@rutgers.edu" },
@@ -55,10 +55,10 @@ const classesData = [
     ],
   },
   {
-    id: "cs336",
-    name: "CS 336 - Principles of Database Systems",
+    id: "S101",
+    name: "Stats 1",
     professor: "Dr. Emily White",
-    schedule: "Tue, Thu • 11:30-12:50 PM",
+    schedule: "Tue • 9:00-10:30 AM",
     students: [
       { name: "Isabella Kim", instagram: "@bella_codes", email: "isabella.k@rutgers.edu" },
       { name: "William Chen", instagram: "@will_chen", email: "william.c@rutgers.edu" },
@@ -84,20 +84,20 @@ const classesData = [
 const generateMoreStudents = (baseStudents: any[]) => {
   const firstNames = ["John", "Jane", "Michael", "Emily", "David", "Sarah", "Daniel", "Lisa", "Kevin", "Rachel", "Chris", "Amanda", "Ryan", "Jessica", "Andrew", "Michelle", "Steven"];
   const lastNames = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor"];
-  
+
   const additionalStudents = Array.from({ length: 17 }, () => {
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
     const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
     const instagramHandle = `@${firstName.toLowerCase()}_${lastName.toLowerCase()}`;
     const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@rutgers.edu`;
-    
+
     return {
       name: `${firstName} ${lastName}`,
       instagram: instagramHandle,
       email: email,
     };
   });
-  
+
   return [...baseStudents, ...additionalStudents];
 };
 
@@ -110,7 +110,7 @@ export default function FindClassmatesPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      
+
       <main className="flex-1 container py-20">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center gap-3 mb-8">
