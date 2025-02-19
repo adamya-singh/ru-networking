@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+// 1) Replace import from auth-helpers with your shared supabase client import
 import { supabase } from "@/lib/supabase";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -68,6 +69,7 @@ const completedCourses = [
 ];
 
 export default function ProfilePage() {
+  //2) we are now using the shared supabase client instead of initializing one here
   const [loading, setLoading] = useState(true);
 
   const form = useForm<z.infer<typeof formSchema>>({
