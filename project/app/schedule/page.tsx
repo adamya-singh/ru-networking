@@ -54,7 +54,7 @@ export default function SchedulePage() {
       console.error("Error fetching sections:", sectionsError);
       return;
     }
-  
+
     const sectionsWithMeetingTimes = await Promise.all(
       (sectionsData || []).map(async (section) => {
         const { data: meetingTimesData, error: meetingTimesError } = await supabase
@@ -128,7 +128,7 @@ export default function SchedulePage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
-      
+
       <main className="flex-1 container py-20">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold flex items-center gap-2">
@@ -143,7 +143,7 @@ export default function SchedulePage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4 min-h-[calc(100vh-12rem)]">
           {/* Course Search Section */}
           <div className="lg:col-span-1">
             <Card className="h-full">
@@ -168,8 +168,8 @@ export default function SchedulePage() {
 
                 <div className="mt-4 space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto">
                   {searchResults.map((course) => (
-                    <Card 
-                      key={course.id} 
+                    <Card
+                      key={course.id}
                       className="p-4 cursor-pointer hover:bg-accent transition-colors"
                       onClick={() => fetchSections(course.id)}
                     >
@@ -201,8 +201,8 @@ export default function SchedulePage() {
                     <div className="bg-background border rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-y-auto p-6">
                       <div className="flex justify-between items-center mb-4">
                         <h2 className="text-xl font-semibold">Select Section</h2>
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="icon"
                           onClick={() => {
                             setSelectedCourseForSections(null);
@@ -262,12 +262,15 @@ export default function SchedulePage() {
           </div>
 
           {/* Schedule View Section */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-4">
             <WeeklySchedule />
+            <Button className="w-full" size="lg">
+              Register!
+            </Button>
           </div>
 
           {/* Chat Section */}
-          <div className="lg:col-span-1 lg:h-[calc(100vh-12rem)] lg:sticky lg:top-20">
+          <div className="lg:col-span-1 h-full">
             <Card className="h-full flex flex-col">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
