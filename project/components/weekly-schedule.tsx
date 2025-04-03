@@ -16,95 +16,46 @@ interface DaySchedule {
   events: ScheduleEvent[];
 }
 
-const schedule: DaySchedule[] = [
-  {
-    day: 'Monday',
-    events: [
-      {
-        title: 'INTR DISCRT STRCT II',
-        startTime: '2:00 PM',
-        endTime: '3:20 PM',
-        location: '01:198:206:06:10582',
-        color: 'bg-blue-900/30',
-      },
-      {
-        title: 'INTR DISCRT STRCT II',
-        startTime: '5:55 PM',
-        endTime: '6:50 PM',
-        location: '01:198:206:06:10582',
-        color: 'bg-blue-900/30',
-      },
-    ],
-  },
-  {
-    day: 'Tuesday',
-    events: [
-      {
-        title: 'MORNING LECTURE',
-        startTime: '9:00 AM',
-        endTime: '10:30 AM',
-        location: '01:198:436:08:22349',
-        color: 'bg-green-900/30',
-      },
-      {
-        title: 'INTRO DATA SCIENCE',
-        startTime: '2:00 PM',
-        endTime: '3:20 PM',
-        location: '01:198:436:08:22349',
-        color: 'bg-orange-900/30',
-      },
-      {
-        title: 'INTRO COMP SCI',
-        startTime: '5:40 PM',
-        endTime: '7:00 PM',
-        location: '01:640:250:C1:12110',
-        color: 'bg-red-900/30',
-      },
-    ],
-  },
-  {
-    day: 'Wednesday',
-    events: [
-      {
-        title: 'INTR DISCRT STRCT II',
-        startTime: '2:00 PM',
-        endTime: '3:20 PM',
-        location: '01:198:206:06:10582',
-        color: 'bg-blue-900/30',
-      },
-    ],
-  },
-  {
-    day: 'Thursday',
-    events: [
-      {
-        title: 'INTRO COMP SCI',
-        startTime: '10:35 AM',
-        endTime: '11:30 AM',
-        //location: '01:640:250:C1:12110',
-        color: 'bg-red-900/30',
-      },
-      {
-        title: 'INTRO DATA SCIENCE',
-        startTime: '2:00 PM',
-        endTime: '3:20 PM',
-        location: '01:198:436:08:22349',
-        color: 'bg-orange-900/30',
-      },
-      {
-        title: 'INTRO COMP SCI',
-        startTime: '5:40 PM',
-        endTime: '7:00 PM',
-        location: '01:640:250:C1:12110',
-        color: 'bg-red-900/30',
-      },
-    ],
-  },
-  {
-    day: 'Friday',
-    events: [],
-  },
-];
+interface WeeklyScheduleProps {
+  events: {
+    courseId: string;
+    title: string;
+    meetingTimes: {
+      meetingday: string;
+      starttime: string;
+      endtime: string;
+      roomnumber: string;
+      buildingcode: string;
+      campusname: string;
+      meetingmodedesc: string;
+    }[];
+    color: string;
+  }[];
+}
+
+const DAY_MAP: { [key: string]: string } = {
+  'M': 'Monday',
+  'T': 'Tuesday',
+  'W': 'Wednesday',
+  'H': 'Thursday',
+  'F': 'Friday',
+};
+
+const formatTime = (time: string): string => {
+  // Convert "0200" to "2:00 PM" or "1020" to "10:20 AM"
+  const hour = parseInt(time.slice(0, 2));
+  const minute = time.slice(2);
+  
+  // Determine if it's afternoon based on the class schedule context
+  // Most university classes between 12:00 PM and 8:00 PM
+  const isAfternoon = hour >= 1 && hour <= 8;
+  
+  const adjustedHour = isAfternoon ? hour + 12 : hour;
+  const period = adjustedHour >= 12 ? 'PM' : 'AM';
+  const hour12 = adjustedHour > 12 ? adjustedHour - 12 : adjustedHour === 0 ? 12 : adjustedHour;
+  
+  return `${hour12}:${minute} ${period}`;
+};
 
 const timeSlots = [
   '8:00 AM',
@@ -118,10 +69,41 @@ const timeSlots = [
   '4:00 PM',
   '5:00 PM',
   '6:00 PM',
+  '7:00 PM',
+  '8:00 PM',
 ];
 
-const WeeklySchedule = () => {
-  const convertTimeToMinutes = (timeStr: string) => {
+const WeeklySchedule = ({ events }: WeeklyScheduleProps) => {
+  // Transform events into day schedule format
+  const schedule: DaySchedule[] = [
+    { day: 'Monday', events: [] },
+    { day: 'Tuesday', events: [] },
+    { day: 'Wednesday', events: [] },
+    { day: 'Thursday', events: [] },
+    { day: 'Friday', events: [] },
+  ];
+
+  // Process events into schedule
+  events.forEach((courseEvent) => {
+    courseEvent.meetingTimes.forEach((meeting) => {
+      const dayName = DAY_MAP[meeting.meetingday];
+      const daySchedule = schedule.find(
+        (day) => day.day === dayName
+      );
+      
+      if (daySchedule) {
+        daySchedule.events.push({
+          title: courseEvent.title,
+          startTime: formatTime(meeting.starttime),
+          endTime: formatTime(meeting.endtime),
+          location: `${meeting.buildingcode} ${meeting.roomnumber}`,
+          color: courseEvent.color,
+        });
+      }
+    });
+  });
+
+  const convertTimeToMinutes = (timeStr: string): number => {
     const [time, period] = timeStr.split(' ');
     let [hours, minutes] = time.split(':').map(Number);
     

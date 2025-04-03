@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,12 +31,42 @@ interface Section {
   meetingtimes: MeetingTime[];
 }
 
+interface ScheduledCourse {
+  courseId: string;
+  title: string;
+  meetingTimes: {
+    meetingday: string;
+    starttime: string;
+    endtime: string;
+    roomnumber: string;
+    buildingcode: string;
+    campusname: string;
+    meetingmodedesc: string;
+  }[];
+  color: string;
+}
+
 export default function SchedulePage() {
-  const [selectedCourses, setSelectedCourses] = useState<Course[]>([]);
+  const [selectedCourses, setSelectedCourses] = useState<ScheduledCourse[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SupabaseCourse[]>([]);
   const [selectedCourseForSections, setSelectedCourseForSections] = useState<SupabaseCourse | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
+
+  const colors = [
+    'bg-blue-900/30',
+    'bg-green-900/30',
+    'bg-orange-900/30',
+    'bg-red-900/30',
+    'bg-purple-900/30',
+    'bg-pink-900/30',
+    'bg-yellow-900/30',
+    'bg-indigo-900/30',
+  ];
+
+  useEffect(() => {
+    console.log('Selected courses updated:', selectedCourses);
+  }, [selectedCourses]);
 
   const fetchSections = async (courseId: number) => {
     const { data: sectionsData, error: sectionsError } = await supabase
@@ -87,19 +117,23 @@ export default function SchedulePage() {
   };
 
   const addCourse = (course: SupabaseCourse, section: Section) => {
-    const mappedCourse: Course = {
-      id: String(course.id),
-      code: course.courseNumber || "",
-      name: course.title || "",
-      credits: course.credits || 0,
-      schedule: {
-        days: [],
-        startTime: "",
-        endTime: "",
-      },
-    };
+    console.log('Adding course with data:', { course, section });
+    
+    const color = colors[selectedCourses.length % colors.length];
+    
+    setSelectedCourses((prev) => {
+      const newCourses = [
+        ...prev,
+        {
+          courseId: String(course.id),
+          title: course.title || '',
+          meetingTimes: section.meetingtimes,
+          color,
+        },
+      ];
+      return newCourses;
+    });
 
-    setSelectedCourses((prev) => [...prev, mappedCourse]);
     setSelectedCourseForSections(null);
     setSections([]);
   };
@@ -159,6 +193,11 @@ export default function SchedulePage() {
                     placeholder="Search courses..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSearch();
+                      }
+                    }}
                     className="flex-1"
                   />
                   <Button size="icon" onClick={handleSearch}>
@@ -263,7 +302,7 @@ export default function SchedulePage() {
 
           {/* Schedule View Section */}
           <div className="lg:col-span-2 space-y-4">
-            <WeeklySchedule />
+            <WeeklySchedule events={selectedCourses} />
             <Button className="w-full" size="lg">
               Register!
             </Button>
