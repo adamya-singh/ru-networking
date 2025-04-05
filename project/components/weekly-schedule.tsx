@@ -8,6 +8,7 @@ interface ScheduleEvent {
   startTime: string;
   endTime: string;
   location?: string;
+  campusname?: string;
   color: string;
 }
 
@@ -97,6 +98,7 @@ const WeeklySchedule = ({ events }: WeeklyScheduleProps) => {
           startTime: formatTime(meeting.starttime),
           endTime: formatTime(meeting.endtime),
           location: `${meeting.buildingcode} ${meeting.roomnumber}`,
+          campusname: meeting.campusname,
           color: courseEvent.color,
         });
       }
@@ -177,6 +179,9 @@ const WeeklySchedule = ({ events }: WeeklyScheduleProps) => {
                         {event.startTime} - {event.endTime}
                       </div>
                       <div className="text-xs text-muted-foreground">{event.location}</div>
+                      {event.campusname && (
+                        <div className="text-xs text-muted-foreground">{event.campusname}</div>
+                      )}
                     </div>
                   );
                 })}

@@ -5,12 +5,13 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Calendar, BookMarked, X, Clock, MessageSquare } from "lucide-react";
+import { Search, Calendar, BookMarked, X, Clock, MessageSquare, Trash2 } from "lucide-react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import Link from "next/link";
 import Chat from "@/components/chat";
 import WeeklySchedule from "@/components/weekly-schedule";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface MeetingTime {
   meetingday: string;
@@ -44,6 +45,24 @@ interface ScheduledCourse {
     meetingmodedesc: string;
   }[];
   color: string;
+  indexnumber: string;
+}
+
+interface SupabaseCourse {
+  id: number;
+  title?: string;
+  coursestring?: string;
+  credits?: number;
+  courseDescription?: string;
+  schoolDescription?: string;
+  subject?: string;
+  subjectdescription?: string;
+  [key: string]: any;
+}
+
+interface SubjectOption {
+  subject: string;
+  description: string;
 }
 
 export default function SchedulePage() {
@@ -52,6 +71,8 @@ export default function SchedulePage() {
   const [searchResults, setSearchResults] = useState<SupabaseCourse[]>([]);
   const [selectedCourseForSections, setSelectedCourseForSections] = useState<SupabaseCourse | null>(null);
   const [sections, setSections] = useState<Section[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [subjects, setSubjects] = useState<SubjectOption[]>([]);
 
   const colors = [
     'bg-blue-900/30',
@@ -67,6 +88,68 @@ export default function SchedulePage() {
   useEffect(() => {
     console.log('Selected courses updated:', selectedCourses);
   }, [selectedCourses]);
+
+  useEffect(() => {
+    const fetchSubjects = async () => {
+      const pageSize = 1000;
+      const subjectMap = new Map<string, string>();
+      let hasMore = true;
+      let start = 0;
+      
+      while (hasMore) {
+        console.log(`Fetching subjects from ${start} to ${start + pageSize - 1}...`);
+        
+        const { data, error } = await supabase
+          .from("courses")
+          .select("subject, subjectdescription")
+          .not("subject", "is", null)
+          .order("subject")
+          .range(start, start + pageSize - 1);
+        
+        if (error) {
+          console.error("Error fetching subjects:", error);
+          break;
+        }
+        
+        if (!data || data.length === 0) {
+          hasMore = false;
+          break;
+        }
+        
+        // Add subjects and descriptions to the map
+        data.forEach(course => {
+          if (course.subject) {
+            subjectMap.set(course.subject, course.subjectdescription || '');
+          }
+        });
+        
+        console.log(`Fetched ${data.length} subjects, total unique so far: ${subjectMap.size}`);
+        
+        if (data.length < pageSize) {
+          hasMore = false;
+        } else {
+          start += pageSize;
+        }
+      }
+      
+      // Convert map to array of objects
+      const uniqueSubjects = Array.from(subjectMap.entries()).map(([subject, description]) => ({
+        subject,
+        description
+      }));
+      
+      console.log("Total unique subjects:", uniqueSubjects.length);
+      console.log("Unique subjects with descriptions:", uniqueSubjects);
+      
+      setSubjects(uniqueSubjects);
+    };
+    
+    fetchSubjects();
+  }, []);
+
+  useEffect(() => {
+    handleSearch();
+  }, [selectedSubject]);
 
   const fetchSections = async (courseId: number) => {
     const { data: sectionsData, error: sectionsError } = await supabase
@@ -129,6 +212,7 @@ export default function SchedulePage() {
           title: course.title || '',
           meetingTimes: section.meetingtimes,
           color,
+          indexnumber: section.indexnumber,
         },
       ];
       return newCourses;
@@ -139,15 +223,24 @@ export default function SchedulePage() {
   };
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) {
+    if (!searchQuery.trim() && !selectedSubject) {
       setSearchResults([]);
       return;
     }
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("courses")
-      .select("*")
-      .ilike("title", `%${searchQuery}%`);
+      .select("*");
+    
+    if (searchQuery.trim()) {
+      query = query.ilike("title", `%${searchQuery}%`);
+    }
+    
+    if (selectedSubject) {
+      query = query.eq("subject", selectedSubject);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error("Search error:", error);
@@ -157,6 +250,10 @@ export default function SchedulePage() {
     if (data) {
       setSearchResults(data);
     }
+  };
+
+  const removeCourse = (courseId: string) => {
+    setSelectedCourses((prev) => prev.filter((course) => course.courseId !== courseId));
   };
 
   return (
@@ -188,21 +285,45 @@ export default function SchedulePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Search courses..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Search courses..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSearch();
+                        }
+                      }}
+                      className="flex-1"
+                    />
+                    <Button size="icon" onClick={handleSearch}>
+                      <Search className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="w-full">
+                    <Select
+                      value={selectedSubject || "all"}
+                      onValueChange={(value) => {
+                        setSelectedSubject(value === "all" ? null : value);
                         handleSearch();
-                      }
-                    }}
-                    className="flex-1"
-                  />
-                  <Button size="icon" onClick={handleSearch}>
-                    <Search className="h-4 w-4" />
-                  </Button>
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Filter by subject" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Subjects</SelectItem>
+                        {subjects.map((subjectOption) => (
+                          <SelectItem key={subjectOption.subject} value={subjectOption.subject}>
+                            {subjectOption.subject} {subjectOption.description ? `- ${subjectOption.description}` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="mt-4 space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto">
@@ -303,6 +424,48 @@ export default function SchedulePage() {
           {/* Schedule View Section */}
           <div className="lg:col-span-2 space-y-4">
             <WeeklySchedule events={selectedCourses} />
+            
+            {/* Selected Courses List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Selected Courses</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {selectedCourses.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">No courses added yet</p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedCourses.map((course) => (
+                      <div 
+                        key={course.courseId} 
+                        className="flex justify-between items-center p-3 rounded-md border"
+                      >
+                        <div>
+                          <h3 className="font-medium">{course.title}</h3>
+                          <p className="text-sm text-muted-foreground">Index: {course.indexnumber}</p>
+                          <div className="text-sm text-muted-foreground">
+                            {course.meetingTimes.map((time, index) => (
+                              <div key={index}>
+                                {time.meetingday} {time.starttime}-{time.endtime} • {time.buildingcode} {time.roomnumber} • {time.campusname}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => removeCourse(course.courseId)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
             <Button className="w-full" size="lg">
               Register!
             </Button>
@@ -342,14 +505,4 @@ interface Course {
     startTime: string;
     endTime: string;
   };
-}
-
-interface SupabaseCourse {
-  id: number;
-  title?: string;
-  coursestring?: string;
-  credits?: number;
-  courseDescription?: string;
-  schoolDescription?: string;
-  [key: string]: any;
 }
