@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import styles from "./chat.module.css"; // Keep your CSS module import
-import { AssistantStream } from "openai/lib/AssistantStream";
+import { OpenAI } from "openai";
 import Markdown from "react-markdown";
 // @ts-expect-error - no types for this yet
 import { AssistantStreamEvent } from "openai/resources/beta/assistants/assistants";
@@ -13,7 +13,7 @@ type MessageProps = {
   text: string;
 };
 
-// 1) Wrap user messages in a “container” so we can float them to the right
+// 1) Wrap user messages in a "container" so we can float them to the right
 const UserMessage = ({ text }: { text: string }) => {
   return (
     <div className={styles.userMessageContainer}>
@@ -22,7 +22,7 @@ const UserMessage = ({ text }: { text: string }) => {
   );
 };
 
-// 2) Wrap assistant messages in a “container” so they float left
+// 2) Wrap assistant messages in a "container" so they float left
 const AssistantMessage = ({ text }: { text: string }) => {
   return (
     <div className={styles.assistantMessageContainer}>
@@ -72,7 +72,7 @@ const Chat = ({
   functionCallHandler = () => Promise.resolve(""), // default to return empty string
 }: ChatProps) => {
   const [userInput, setUserInput] = useState("");
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<MessageProps[]>([]);
   const [inputDisabled, setInputDisabled] = useState(false);
   const [threadId, setThreadId] = useState("");
 
@@ -107,8 +107,39 @@ const Chat = ({
         }),
       }
     );
-    const stream = AssistantStream.fromReadableStream(response.body);
-    handleReadableStream(stream);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    if (!response.body) {
+      throw new Error('Response body is null');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data) {
+            try {
+              const event = JSON.parse(data);
+              handleStreamEvent(event);
+            } catch (e) {
+              console.error('Error parsing stream event:', e);
+            }
+          }
+        }
+      }
+    }
   };
 
   const submitActionResult = async (runId: string, toolCallOutputs: any) => {
@@ -125,8 +156,65 @@ const Chat = ({
         }),
       }
     );
-    const stream = AssistantStream.fromReadableStream(response.body);
-    handleReadableStream(stream);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    if (!response.body) {
+      throw new Error('Response body is null');
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const data = line.slice(6);
+          if (data) {
+            try {
+              const event = JSON.parse(data);
+              handleStreamEvent(event);
+            } catch (e) {
+              console.error('Error parsing stream event:', e);
+            }
+          }
+        }
+      }
+    }
+  };
+
+  const handleStreamEvent = (event: any) => {
+    switch (event.event) {
+      case 'text.created':
+        handleTextCreated();
+        break;
+      case 'text.delta':
+        handleTextDelta(event.data);
+        break;
+      case 'image.file.done':
+        handleImageFileDone(event.data);
+        break;
+      case 'tool.call.created':
+        toolCallCreated(event.data);
+        break;
+      case 'tool.call.delta':
+        toolCallDelta(event.data, event.snapshot);
+        break;
+      case 'thread.run.requires_action':
+        handleRequiresAction(event);
+        break;
+      case 'thread.run.completed':
+        handleRunCompleted();
+        break;
+    }
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -189,26 +277,6 @@ const Chat = ({
 
   const handleRunCompleted = () => {
     setInputDisabled(false);
-  };
-
-  const handleReadableStream = (stream: AssistantStream) => {
-    // messages
-    stream.on("textCreated", handleTextCreated);
-    stream.on("textDelta", handleTextDelta);
-
-    // image
-    stream.on("imageFileDone", handleImageFileDone);
-
-    // code interpreter
-    stream.on("toolCallCreated", toolCallCreated);
-    stream.on("toolCallDelta", toolCallDelta);
-
-    // requires_action and run.done
-    stream.on("event", (event) => {
-      if (event.event === "thread.run.requires_action")
-        handleRequiresAction(event);
-      if (event.event === "thread.run.completed") handleRunCompleted();
-    });
   };
 
   /* Utility Helpers */

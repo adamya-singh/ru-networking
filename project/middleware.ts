@@ -36,7 +36,10 @@ export async function middleware(request: NextRequest) {
           },
           remove(name: string, options: any) {
             console.log('Middleware - Removing cookie:', name);
-            response.cookies.delete(name, options);
+            response.cookies.delete({
+              name,
+              ...options
+            });
           },
         },
       }

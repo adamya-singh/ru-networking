@@ -27,9 +27,9 @@ export async function GET(request: Request) {
               console.log('Auth callback - Setting cookie:', name);
               cookieStore.set(name, value, options);
             },
-            remove(name: string, options: any) {
+            remove(name: string) {
               console.log('Auth callback - Removing cookie:', name);
-              cookieStore.delete(name, options);
+              cookieStore.delete(name);
             },
           },
         }
