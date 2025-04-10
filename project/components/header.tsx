@@ -13,70 +13,23 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ThemeToggle from "@/components/themetoggle";
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/components/providers";
+import { useEffect } from "react";
 
 export function Header() {
-  const [userAvatar, setUserAvatar] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user, signOut, loading } = useAuth();
+  const userAvatar = user?.user_metadata?.picture || null;
+  const userEmail = user?.email || null;
+  const isAuthenticated = !!user;
 
+  // Add debug logging
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        console.log('Header - Full user metadata:', session.user.user_metadata);
-        console.log('Header - Raw avatar fields:', {
-          avatar_url: session.user.user_metadata.avatar_url,
-          picture: session.user.user_metadata.picture,
-          avatar: session.user.user_metadata.avatar,
-          raw_metadata: session.user.user_metadata
-        });
-        
-        // Google OAuth typically provides the profile picture in the 'picture' field
-        const avatarUrl = session.user.user_metadata.picture || null;
-        console.log('Header - Selected avatar URL:', avatarUrl);
-        setUserAvatar(avatarUrl);
-        setUserEmail(session.user.email || null);
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-      }
-    };
-
-    getUser();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        console.log('Header - Auth state change - Full user metadata:', session.user.user_metadata);
-        console.log('Header - Auth state change - Raw avatar fields:', {
-          avatar_url: session.user.user_metadata.avatar_url,
-          picture: session.user.user_metadata.picture,
-          avatar: session.user.user_metadata.avatar,
-          raw_metadata: session.user.user_metadata
-        });
-        
-        // Google OAuth typically provides the profile picture in the 'picture' field
-        const avatarUrl = session.user.user_metadata.picture || null;
-        console.log('Header - Auth state change - Selected avatar URL:', avatarUrl);
-        setUserAvatar(avatarUrl);
-        setUserEmail(session.user.email || null);
-        setIsAuthenticated(true);
-      } else {
-        setUserAvatar(null);
-        setUserEmail(null);
-        setIsAuthenticated(false);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-  };
+    if (user) {
+      console.log('User data:', user);
+      console.log('User metadata:', user.user_metadata);
+      console.log('Profile picture URL:', userAvatar);
+    }
+  }, [user, userAvatar]);
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
@@ -105,7 +58,15 @@ export function Header() {
           <Button variant="ghost">Help</Button>
           <ThemeToggle />
         </nav>
-        {isAuthenticated ? (
+        {loading ? (
+          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback>
+                <User className="h-4 w-4 animate-pulse" />
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        ) : isAuthenticated ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -133,7 +94,7 @@ export function Header() {
                   <span>Update Profile</span>
                 </DropdownMenuItem>
               </Link>
-              <DropdownMenuItem onClick={handleSignOut}>
+              <DropdownMenuItem onClick={signOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>

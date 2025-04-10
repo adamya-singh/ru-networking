@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-// 1) Replace import from auth-helpers with your shared supabase client import
 import { supabase } from "@/lib/supabase";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import { useAuth } from "@/components/providers";
 
 const currentYear = new Date().getFullYear();
 
@@ -69,8 +69,8 @@ const completedCourses = [
 ];
 
 export default function ProfilePage() {
-  //2) we are now using the shared supabase client instead of initializing one here
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
 	resolver: zodResolver(formSchema),
@@ -86,15 +86,11 @@ export default function ProfilePage() {
 
   useEffect(() => {
 	const loadProfile = async () => {
-  	const {
-    	data: { session },
-  	} = await supabase.auth.getSession();
-
-  	if (session?.user?.id) {
+  	if (user?.id) {
     	const { data: profile } = await supabase
       	.from("profiles")
       	.select("*")
-      	.eq("id", session.user.id)
+      	.eq("id", user.id)
       	.single();
 
     	if (profile) {
@@ -105,21 +101,17 @@ export default function ProfilePage() {
 	};
 
 	loadProfile();
-  }, [form]);
+  }, [form, user]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
 	try {
-  	const {
-    	data: { session },
-  	} = await supabase.auth.getSession();
-
-  	if (!session?.user?.id) {
+  	if (!user?.id) {
     	toast.error("Please sign in to update your profile");
     	return;
   	}
 
   	const { error } = await supabase.from("profiles").upsert({
-    	id: session.user.id,
+    	id: user.id,
     	...values,
     	updated_at: new Date().toISOString(),
   	});
@@ -203,142 +195,85 @@ export default function ProfilePage() {
                       	</FormItem>
                     	)}
                   	/>
+                  	<FormField
+                    	control={form.control}
+                    	name="minor"
+                    	render={({ field }) => (
+                      	<FormItem>
+                        	<FormLabel className="flex items-center gap-2">
+                          	<BookOpen className="w-4 h-4" />
+                          	Minor
+                        	</FormLabel>
+                        	<FormControl>
+                          	<Input {...field} />
+                        	</FormControl>
+                        	<FormMessage />
+                      	</FormItem>
+                    	)}
+                  	/>
+                  	<FormField
+                    	control={form.control}
+                    	name="interests"
+                    	render={({ field }) => (
+                      	<FormItem>
+                        	<FormLabel className="flex items-center gap-2">
+                          	<Heart className="w-4 h-4" />
+                          	Interests
+                        	</FormLabel>
+                        	<FormControl>
+                          	<Input {...field} />
+                        	</FormControl>
+                        	<FormMessage />
+                      	</FormItem>
+                    	)}
+                  	/>
+                  	<FormField
+                    	control={form.control}
+                    	name="professional_aspirations"
+                    	render={({ field }) => (
+                      	<FormItem>
+                        	<FormLabel className="flex items-center gap-2">
+                          	<Target className="w-4 h-4" />
+                          	Professional Aspirations
+                        	</FormLabel>
+                        	<FormControl>
+                          	<Input {...field} />
+                        	</FormControl>
+                        	<FormMessage />
+                      	</FormItem>
+                    	)}
+                  	/>
+                  	<FormField
+                    	control={form.control}
+                    	name="bio"
+                    	render={({ field }) => (
+                      	<FormItem className="col-span-2">
+                        	<FormLabel className="flex items-center gap-2">
+                          	<User className="w-4 h-4" />
+                          	Bio
+                        	</FormLabel>
+                        	<FormControl>
+                          	<Textarea
+                            	{...field}
+                            	className="min-h-[100px]"
+                          	/>
+                        	</FormControl>
+                        	<FormMessage />
+                      	</FormItem>
+                    	)}
+                  	/>
                 	</div>
-
-                	<FormField
-                  	control={form.control}
-                  	name="minor"
-                  	render={({ field }) => (
-                    	<FormItem>
-                      	<FormLabel className="flex items-center gap-2">
-                        	<BookOpen className="w-4 h-4" />
-                        	Minor (Optional)
-                      	</FormLabel>
-                      	<FormControl>
-                        	<Input {...field} />
-                      	</FormControl>
-                      	<FormMessage />
-                    	</FormItem>
-                  	)}
-                	/>
-
-                	<FormField
-                  	control={form.control}
-                  	name="interests"
-                  	render={({ field }) => (
-                    	<FormItem>
-                      	<FormLabel className="flex items-center gap-2">
-                        	<Heart className="w-4 h-4" />
-                        	Interests
-                      	</FormLabel>
-                      	<FormControl>
-                        	<Textarea
-                          	{...field}
-                          	placeholder="What are you passionate about?"
-                          	className="min-h-[100px]"
-                        	/>
-                      	</FormControl>
-                      	<FormMessage />
-                    	</FormItem>
-                  	)}
-                	/>
-
-                	<FormField
-                  	control={form.control}
-                  	name="professional_aspirations"
-                  	render={({ field }) => (
-                    	<FormItem>
-                      	<FormLabel className="flex items-center gap-2">
-                        	<Target className="w-4 h-4" />
-                        	Professional Aspirations
-                      	</FormLabel>
-                      	<FormControl>
-                        	<Textarea
-                          	{...field}
-                          	placeholder="What are your career goals?"
-                          	className="min-h-[100px]"
-                        	/>
-                      	</FormControl>
-                      	<FormMessage />
-                    	</FormItem>
-                  	)}
-                	/>
-
-                	<FormField
-                  	control={form.control}
-                  	name="bio"
-                  	render={({ field }) => (
-                    	<FormItem>
-                      	<FormLabel className="flex items-center gap-2">
-                        	<User className="w-4 h-4" />
-                        	Short Bio
-                      	</FormLabel>
-                      	<FormControl>
-                        	<Textarea
-                          	{...field}
-                          	placeholder="Tell us about yourself..."
-                          	className="min-h-[100px]"
-                        	/>
-                      	</FormControl>
-                      	<FormMessage />
-                    	</FormItem>
-                  	)}
-                	/>
-
-                	<Button
-                  	type="submit"
-                  	className="w-full"
-                  	disabled={form.formState.isSubmitting}
-                	>
-                  	{form.formState.isSubmitting ? "Saving..." : "Save Profile"}
+                	<Button type="submit" className="w-full">
+                  	<CheckCircle2 className="w-4 h-4 mr-2" />
+                  	Save Profile
                 	</Button>
               	</form>
             	</Form>
           	</CardContent>
         	</Card>
       	</div>
-
-      	{/* Progress Section */}
-      	<div className="lg:w-96">
-        	<Card>
-          	<CardHeader>
-            	<h2 className="text-2xl font-bold">Major Progress</h2>
-            	<p className="text-muted-foreground">Track your degree completion</p>
-          	</CardHeader>
-          	<CardContent className="space-y-6">
-            	<div className="space-y-2">
-              	<div className="flex justify-between text-sm">
-                	<span>Completion Progress</span>
-                	<span className="font-medium">15%</span>
-              	</div>
-              	<Progress value={15} className="h-2" />
-            	</div>
-
-            	<div className="space-y-4">
-              	<h3 className="font-semibold flex items-center gap-2">
-                	<CheckCircle2 className="h-5 w-5 text-primary" />
-                	Completed Courses
-              	</h3>
-              	<div className="space-y-3">
-                	{completedCourses.map((course) => (
-                  	<Card key={course.id}>
-                    	<CardContent className="p-4">
-                      	<h4 className="font-medium">{course.name}</h4>
-                      	<div className="text-sm text-muted-foreground mt-1">
-                        	<p>{course.professor}</p>
-                        	<p>{course.term}</p>
-                      	</div>
-                    	</CardContent>
-                  	</Card>
-                	))}
-              	</div>
-            	</div>
-          	</CardContent>
-        	</Card>
-      	</div>
     	</div>
   	</main>
-
   	<Footer />
 	</div>
   );

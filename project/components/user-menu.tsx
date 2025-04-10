@@ -11,17 +11,18 @@ import {
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers";
 
-export function UserMenu({ isSignedIn = false }) {
+export function UserMenu() {
   const pathname = usePathname();
   const router = useRouter();
+  const { user, signOut } = useAuth();
 
   if (pathname === "/") return null;
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    await signOut();
     router.push("/");
   };
 
@@ -33,7 +34,7 @@ export function UserMenu({ isSignedIn = false }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
-        {isSignedIn ? (
+        {user ? (
           <>
             <Link href="/schedule">
               <DropdownMenuItem>

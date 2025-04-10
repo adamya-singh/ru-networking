@@ -11,8 +11,6 @@ export async function GET(request: Request) {
       console.log('Auth callback - Starting with code:', code);
       
       const cookieStore = await cookies();
-      console.log('Auth callback - Cookie store type:', typeof cookieStore);
-      console.log('Auth callback - Cookie store methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(cookieStore)));
       
       const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,31 +18,46 @@ export async function GET(request: Request) {
         {
           cookies: {
             get(name: string) {
-              console.log('Auth callback - Getting cookie:', name);
               return cookieStore.get(name)?.value;
             },
             set(name: string, value: string, options: any) {
-              console.log('Auth callback - Setting cookie:', name);
               cookieStore.set(name, value, options);
             },
             remove(name: string) {
-              console.log('Auth callback - Removing cookie:', name);
               cookieStore.delete(name);
             },
           },
         }
       );
       
-      console.log('Auth callback - Supabase client created');
-      
-      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(code);
       
       if (error) {
         console.error('Auth callback error:', error);
         return NextResponse.redirect(new URL("/signin?error=auth", requestUrl.origin));
       }
+
+      // Log user metadata to verify it's being received
+      if (session?.user?.user_metadata) {
+        console.log('User metadata:', session.user.user_metadata);
+      }
       
-      console.log('Auth callback - Successfully exchanged code for session');
+      // Update user metadata if needed
+      if (session?.user) {
+        const { data: { user }, error: updateError } = await supabase.auth.updateUser({
+          data: {
+            ...session.user.user_metadata,
+            picture: session.user.user_metadata?.picture || session.user.user_metadata?.avatar_url
+          }
+        });
+        
+        if (updateError) {
+          console.error('Error updating user metadata:', updateError);
+        } else {
+          console.log('Successfully updated user metadata:', user?.user_metadata);
+        }
+      }
+      
     } catch (error) {
       console.error('Auth callback error:', error);
       if (error instanceof Error) {
