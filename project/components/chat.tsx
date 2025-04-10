@@ -82,6 +82,28 @@ type ToolCall = {
   };
 };
 
+type ErrorType = 
+  | 'network'
+  | 'api'
+  | 'stream'
+  | 'tool'
+  | 'unknown';
+
+const getErrorMessage = (error: Error, type: ErrorType): string => {
+  switch (type) {
+    case 'network':
+      return "Sorry, there was a network error. Please check your connection and try again.";
+    case 'api':
+      return "Sorry, there was an error with the API. Please try again later.";
+    case 'stream':
+      return "Sorry, there was an error in the stream. Please try again.";
+    case 'tool':
+      return "Sorry, there was an error processing the tool call. Please try again.";
+    case 'unknown':
+      return "Sorry, an unexpected error occurred. Please try again.";
+  }
+};
+
 const Chat = ({
   functionCallHandler = () => Promise.resolve(""), // default to return empty string
 }: ChatProps) => {
@@ -120,6 +142,12 @@ const Chat = ({
     createThread();
   }, []);
 
+  const handleError = (error: Error, type: ErrorType) => {
+    console.error(`Error (${type}):`, error);
+    setInputDisabled(false);
+    appendMessage("assistant", getErrorMessage(error, type));
+  };
+
   const sendMessage = async (text: string) => {
     try {
       const response = await fetch(
@@ -143,9 +171,7 @@ const Chat = ({
       const stream = AssistantStream.fromReadableStream(response.body);
       handleReadableStream(stream);
     } catch (error) {
-      console.error('Error sending message:', error);
-      setInputDisabled(false);
-      appendMessage("assistant", "Sorry, there was an error processing your message. Please try again.");
+      handleError(error as Error, 'api');
     }
   };
 
@@ -176,9 +202,7 @@ const Chat = ({
       const stream = AssistantStream.fromReadableStream(response.body);
       handleReadableStream(stream);
     } catch (error) {
-      console.error('Error submitting action result:', error);
-      setInputDisabled(false);
-      appendMessage("assistant", "Sorry, there was an error processing the action. Please try again.");
+      handleError(error as Error, 'api');
     }
   };
 
@@ -241,7 +265,7 @@ const Chat = ({
               tool_call_id: toolCall.id
             };
           } catch (error) {
-            console.error(`Error handling tool call ${toolCall.id}:`, error);
+            handleError(error as Error, 'tool');
             return {
               output: "Error processing tool call",
               tool_call_id: toolCall.id
@@ -253,9 +277,7 @@ const Chat = ({
       setInputDisabled(true);
       await submitActionResult(runId, toolCallOutputs);
     } catch (error) {
-      console.error('Error in handleRequiresAction:', error);
-      setInputDisabled(false);
-      appendMessage("assistant", "Sorry, there was an error processing the tool calls. Please try again.");
+      handleError(error as Error, 'api');
     }
   };
 
@@ -293,9 +315,7 @@ const Chat = ({
 
     // Handle stream errors
     stream.on("error", (error) => {
-      console.error('Stream error:', error);
-      setInputDisabled(false);
-      appendMessage("assistant", "Sorry, there was an error in the stream. Please try again.");
+      handleError(error as Error, 'stream');
       // Remove stream from active streams
       activeStreams.current = activeStreams.current.filter(s => s !== stream);
     });
