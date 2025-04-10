@@ -19,8 +19,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    console.log('AuthProvider - Initializing auth state change listener');
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('AuthProvider - Auth state changed:', event);
+      
+      if (session) {
+        // Verify the session with getUser()
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error || !user) {
+          console.error('AuthProvider - Invalid session:', error);
+          setUser(null);
+        } else {
+          console.log('AuthProvider - Valid session for user:', user.email);
+          setUser(user);
+        }
+      } else {
+        setUser(null);
+      }
+      
       setLoading(false);
     });
 

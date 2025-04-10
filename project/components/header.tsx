@@ -25,7 +25,12 @@ export function Header() {
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        setUserAvatar(session.user.user_metadata.avatar_url);
+        console.log('Header - User metadata:', session.user.user_metadata);
+        const avatarUrl = session.user.user_metadata.avatar_url || 
+                         session.user.user_metadata.picture || 
+                         session.user.user_metadata.avatar || 
+                         null;
+        setUserAvatar(avatarUrl);
         setUserEmail(session.user.email);
         setIsAuthenticated(true);
       } else {
@@ -37,7 +42,12 @@ export function Header() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        setUserAvatar(session.user.user_metadata.avatar_url);
+        console.log('Header - Auth state change - User metadata:', session.user.user_metadata);
+        const avatarUrl = session.user.user_metadata.avatar_url || 
+                         session.user.user_metadata.picture || 
+                         session.user.user_metadata.avatar || 
+                         null;
+        setUserAvatar(avatarUrl);
         setUserEmail(session.user.email);
         setIsAuthenticated(true);
       } else {
