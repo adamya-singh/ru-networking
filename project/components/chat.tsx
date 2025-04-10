@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import styles from "./chat.module.css"; // Keep your CSS module import
-import { OpenAI } from "openai";
+import { AssistantStream } from "openai/lib/AssistantStream";
 import Markdown from "react-markdown";
 // @ts-expect-error - no types for this yet
 import { AssistantStreamEvent } from "openai/resources/beta/assistants/assistants";
@@ -68,6 +68,20 @@ type ChatProps = {
   ) => Promise<string>;
 };
 
+type ToolCallOutput = {
+  output: string;
+  tool_call_id: string;
+};
+
+type ToolCall = {
+  id: string;
+  type: string;
+  function: {
+    name: string;
+    arguments: string;
+  };
+};
+
 const Chat = ({
   functionCallHandler = () => Promise.resolve(""), // default to return empty string
 }: ChatProps) => {
@@ -75,6 +89,7 @@ const Chat = ({
   const [messages, setMessages] = useState<MessageProps[]>([]);
   const [inputDisabled, setInputDisabled] = useState(false);
   const [threadId, setThreadId] = useState("");
+  const activeStreams = useRef<AssistantStream[]>([]);
 
   // automatically scroll to bottom of chat
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -84,6 +99,14 @@ const Chat = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Cleanup streams on unmount
+  useEffect(() => {
+    return () => {
+      // Clear the active streams array
+      activeStreams.current = [];
+    };
+  }, []);
 
   // create a new threadID when chat component created
   useEffect(() => {
@@ -98,122 +121,64 @@ const Chat = ({
   }, []);
 
   const sendMessage = async (text: string) => {
-    const response = await fetch(
-      `/api/assistants/threads/${threadId}/messages`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          content: text,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    if (!response.body) {
-      throw new Error('Response body is null');
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n');
-      
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data) {
-            try {
-              const event = JSON.parse(data);
-              handleStreamEvent(event);
-            } catch (e) {
-              console.error('Error parsing stream event:', e);
-            }
-          }
+    try {
+      const response = await fetch(
+        `/api/assistants/threads/${threadId}/messages`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            content: text,
+          }),
         }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      if (!response.body) {
+        throw new Error('No response body received');
+      }
+      
+      const stream = AssistantStream.fromReadableStream(response.body);
+      handleReadableStream(stream);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      setInputDisabled(false);
+      appendMessage("assistant", "Sorry, there was an error processing your message. Please try again.");
     }
   };
 
   const submitActionResult = async (runId: string, toolCallOutputs: any) => {
-    const response = await fetch(
-      `/api/assistants/threads/${threadId}/actions`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          runId: runId,
-          toolCallOutputs: toolCallOutputs,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    if (!response.body) {
-      throw new Error('Response body is null');
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n');
-      
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = line.slice(6);
-          if (data) {
-            try {
-              const event = JSON.parse(data);
-              handleStreamEvent(event);
-            } catch (e) {
-              console.error('Error parsing stream event:', e);
-            }
-          }
+    try {
+      const response = await fetch(
+        `/api/assistants/threads/${threadId}/actions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            runId: runId,
+            toolCallOutputs: toolCallOutputs,
+          }),
         }
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    }
-  };
-
-  const handleStreamEvent = (event: any) => {
-    switch (event.event) {
-      case 'text.created':
-        handleTextCreated();
-        break;
-      case 'text.delta':
-        handleTextDelta(event.data);
-        break;
-      case 'image.file.done':
-        handleImageFileDone(event.data);
-        break;
-      case 'tool.call.created':
-        toolCallCreated(event.data);
-        break;
-      case 'tool.call.delta':
-        toolCallDelta(event.data, event.snapshot);
-        break;
-      case 'thread.run.requires_action':
-        handleRequiresAction(event);
-        break;
-      case 'thread.run.completed':
-        handleRunCompleted();
-        break;
+      
+      if (!response.body) {
+        throw new Error('No response body received');
+      }
+      
+      const stream = AssistantStream.fromReadableStream(response.body);
+      handleReadableStream(stream);
+    } catch (error) {
+      console.error('Error submitting action result:', error);
+      setInputDisabled(false);
+      appendMessage("assistant", "Sorry, there was an error processing the action. Please try again.");
     }
   };
 
@@ -263,20 +228,77 @@ const Chat = ({
   const handleRequiresAction = async (
     event: AssistantStreamEvent.ThreadRunRequiresAction
   ) => {
-    const runId = event.data.id;
-    const toolCalls = event.data.required_action.submit_tool_outputs.tool_calls;
-    const toolCallOutputs = await Promise.all(
-      toolCalls.map(async (toolCall: any) => {
-        const result = await functionCallHandler(toolCall);
-        return { output: result, tool_call_id: toolCall.id };
-      })
-    );
-    setInputDisabled(true);
-    submitActionResult(runId, toolCallOutputs);
+    try {
+      const runId = event.data.id;
+      const toolCalls = event.data.required_action.submit_tool_outputs.tool_calls;
+      
+      const toolCallOutputs: ToolCallOutput[] = await Promise.all(
+        toolCalls.map(async (toolCall: RequiredActionFunctionToolCall) => {
+          try {
+            const result = await functionCallHandler(toolCall);
+            return {
+              output: result,
+              tool_call_id: toolCall.id
+            };
+          } catch (error) {
+            console.error(`Error handling tool call ${toolCall.id}:`, error);
+            return {
+              output: "Error processing tool call",
+              tool_call_id: toolCall.id
+            };
+          }
+        })
+      );
+
+      setInputDisabled(true);
+      await submitActionResult(runId, toolCallOutputs);
+    } catch (error) {
+      console.error('Error in handleRequiresAction:', error);
+      setInputDisabled(false);
+      appendMessage("assistant", "Sorry, there was an error processing the tool calls. Please try again.");
+    }
   };
 
   const handleRunCompleted = () => {
     setInputDisabled(false);
+  };
+
+  const handleReadableStream = (stream: AssistantStream) => {
+    // Add stream to active streams
+    activeStreams.current.push(stream);
+
+    // messages
+    stream.on("textCreated", handleTextCreated);
+    stream.on("textDelta", handleTextDelta);
+
+    // image
+    stream.on("imageFileDone", handleImageFileDone);
+
+    // code interpreter
+    stream.on("toolCallCreated", toolCallCreated);
+    stream.on("toolCallDelta", toolCallDelta);
+
+    // requires_action and run.done
+    stream.on("event", (event) => {
+      if (event.event === "thread.run.requires_action")
+        handleRequiresAction(event);
+      if (event.event === "thread.run.completed") handleRunCompleted();
+    });
+
+    // Handle stream completion
+    stream.on("end", () => {
+      // Remove stream from active streams
+      activeStreams.current = activeStreams.current.filter(s => s !== stream);
+    });
+
+    // Handle stream errors
+    stream.on("error", (error) => {
+      console.error('Stream error:', error);
+      setInputDisabled(false);
+      appendMessage("assistant", "Sorry, there was an error in the stream. Please try again.");
+      // Remove stream from active streams
+      activeStreams.current = activeStreams.current.filter(s => s !== stream);
+    });
   };
 
   /* Utility Helpers */
