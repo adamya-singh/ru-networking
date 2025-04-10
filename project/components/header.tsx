@@ -25,13 +25,19 @@ export function Header() {
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        console.log('Header - User metadata:', session.user.user_metadata);
-        const avatarUrl = session.user.user_metadata.avatar_url || 
-                         session.user.user_metadata.picture || 
-                         session.user.user_metadata.avatar || 
-                         null;
+        console.log('Header - Full user metadata:', session.user.user_metadata);
+        console.log('Header - Raw avatar fields:', {
+          avatar_url: session.user.user_metadata.avatar_url,
+          picture: session.user.user_metadata.picture,
+          avatar: session.user.user_metadata.avatar,
+          raw_metadata: session.user.user_metadata
+        });
+        
+        // Google OAuth typically provides the profile picture in the 'picture' field
+        const avatarUrl = session.user.user_metadata.picture || null;
+        console.log('Header - Selected avatar URL:', avatarUrl);
         setUserAvatar(avatarUrl);
-        setUserEmail(session.user.email);
+        setUserEmail(session.user.email || null);
         setIsAuthenticated(true);
       } else {
         setIsAuthenticated(false);
@@ -42,13 +48,19 @@ export function Header() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        console.log('Header - Auth state change - User metadata:', session.user.user_metadata);
-        const avatarUrl = session.user.user_metadata.avatar_url || 
-                         session.user.user_metadata.picture || 
-                         session.user.user_metadata.avatar || 
-                         null;
+        console.log('Header - Auth state change - Full user metadata:', session.user.user_metadata);
+        console.log('Header - Auth state change - Raw avatar fields:', {
+          avatar_url: session.user.user_metadata.avatar_url,
+          picture: session.user.user_metadata.picture,
+          avatar: session.user.user_metadata.avatar,
+          raw_metadata: session.user.user_metadata
+        });
+        
+        // Google OAuth typically provides the profile picture in the 'picture' field
+        const avatarUrl = session.user.user_metadata.picture || null;
+        console.log('Header - Auth state change - Selected avatar URL:', avatarUrl);
         setUserAvatar(avatarUrl);
-        setUserEmail(session.user.email);
+        setUserEmail(session.user.email || null);
         setIsAuthenticated(true);
       } else {
         setUserAvatar(null);
@@ -98,10 +110,13 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={userAvatar || ""} alt={userEmail || "User avatar"} />
-                  <AvatarFallback>
-                    <User className="h-4 w-4" />
-                  </AvatarFallback>
+                  {userAvatar ? (
+                    <AvatarImage src={userAvatar} alt={userEmail || "User avatar"} />
+                  ) : (
+                    <AvatarFallback>
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  )}
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
