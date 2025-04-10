@@ -26,8 +26,12 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Prepare the streaming Run
+    const assistantId = process.env.OPENAI_ASSISTANT_ID;
+    if (!assistantId) {
+      throw new Error("OPENAI_ASSISTANT_ID environment variable is not set");
+    }
     const stream = openai.beta.threads.runs.stream(activeThreadId, {
-      assistant_id: "asst_yhA0GKRbKWUHkL97aMCK5flV", // use your known assistant ID
+      assistant_id: assistantId,
     });
 
     // 5. Construct SSE response
