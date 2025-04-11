@@ -27,7 +27,7 @@ export default function Home() {
                 who share your academic interests and career goals.
               </p>
               <div className="mt-10 flex items-center justify-center gap-x-6">
-                <Link href="/assistant">
+                <Link href="/schedule">
                   <Button size="lg" className="gap-2">
                     Get Started <Users className="h-4 w-4" />
                   </Button>

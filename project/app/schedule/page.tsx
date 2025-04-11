@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Calendar, BookMarked, X, Clock, MessageSquare, Trash2 } from "lucide-react";
+import { Search, Calendar, BookMarked, X, Clock, MessageSquare, Trash2, Save } from "lucide-react";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import Link from "next/link";
@@ -46,6 +46,7 @@ interface ScheduledCourse {
   }[];
   color: string;
   indexnumber: string;
+  sectionId: number;
 }
 
 interface SupabaseCourse {
@@ -73,6 +74,10 @@ export default function SchedulePage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [subjects, setSubjects] = useState<SubjectOption[]>([]);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [scheduleName, setScheduleName] = useState("");
+  const [scheduleSemester, setScheduleSemester] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const colors = [
     'bg-blue-900/30',
@@ -213,6 +218,7 @@ export default function SchedulePage() {
           meetingTimes: section.meetingtimes,
           color,
           indexnumber: section.indexnumber,
+          sectionId: section.id,
         },
       ];
       return newCourses;
@@ -256,6 +262,58 @@ export default function SchedulePage() {
     setSelectedCourses((prev) => prev.filter((course) => course.courseId !== courseId));
   };
 
+  const saveSchedule = async () => {
+    if (!scheduleName.trim()) {
+      // Show error toast
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Get the current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) throw new Error("No authenticated user");
+
+      // Insert schedule with user_id
+      const { data: schedule, error: scheduleError } = await supabase
+        .from('schedules')
+        .insert({ 
+          name: scheduleName, 
+          semester: scheduleSemester,
+          user_id: user.id 
+        })
+        .select()
+        .single();
+        
+      if (scheduleError) throw scheduleError;
+      
+      // Get section IDs from the selectedCourses
+      const sectionEntries = selectedCourses.map(course => ({
+        schedule_id: schedule.id,
+        section_id: course.sectionId
+      }));
+      
+      // Insert section relations
+      const { error: sectionsError } = await supabase
+        .from('schedule_sections')
+        .insert(sectionEntries);
+        
+      if (sectionsError) throw sectionsError;
+      
+      setShowSaveModal(false);
+      setScheduleName("");
+      setScheduleSemester("");
+      // Show success toast
+      window.location.href = '/saved-schedules';
+    } catch (error) {
+      console.error("Error saving schedule:", error);
+      // Show error toast
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
@@ -266,12 +324,23 @@ export default function SchedulePage() {
             <Calendar className="h-8 w-8 text-primary" />
             Create Schedule
           </h1>
-          <Link href="/saved-schedules">
-            <Button variant="outline" className="gap-2">
-              <BookMarked className="h-4 w-4" />
-              Saved Schedules
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => setShowSaveModal(true)}
+              disabled={selectedCourses.length === 0}
+            >
+              <Save className="h-4 w-4" />
+              Save Schedule
             </Button>
-          </Link>
+            <Link href="/saved-schedules">
+              <Button variant="outline" className="gap-2">
+                <BookMarked className="h-4 w-4" />
+                Saved Schedules
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-4 min-h-[calc(100vh-12rem)]">
@@ -488,6 +557,39 @@ export default function SchedulePage() {
             </Card>
           </div>
         </div>
+
+        {/* Save Schedule Modal */}
+        {showSaveModal && (
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+            <div className="bg-background border rounded-lg shadow-lg max-w-md w-full p-6">
+              <h2 className="text-xl font-semibold mb-4">Save Schedule</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Name</label>
+                  <Input 
+                    value={scheduleName}
+                    onChange={(e) => setScheduleName(e.target.value)}
+                    placeholder="Fall 2024 Schedule"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Semester</label>
+                  <Input 
+                    value={scheduleSemester}
+                    onChange={(e) => setScheduleSemester(e.target.value)}
+                    placeholder="Fall 2024"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button variant="outline" onClick={() => setShowSaveModal(false)}>Cancel</Button>
+                  <Button onClick={saveSchedule} disabled={isSaving}>
+                    {isSaving ? 'Saving...' : 'Save'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       <Footer />
