@@ -12,6 +12,8 @@ import Link from "next/link";
 import Chat from "@/components/chat";
 import WeeklySchedule from "@/components/weekly-schedule";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface MeetingTime {
   meetingday: string;
@@ -54,8 +56,8 @@ interface SupabaseCourse {
   title?: string;
   coursestring?: string;
   credits?: number;
-  courseDescription?: string;
-  schoolDescription?: string;
+  coursedescription?: string;
+  schooldescription?: string;
   subject?: string;
   subjectdescription?: string;
   [key: string]: any;
@@ -78,6 +80,9 @@ export default function SchedulePage() {
   const [scheduleName, setScheduleName] = useState("");
   const [scheduleSemester, setScheduleSemester] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [campusOptions, setCampusOptions] = useState<{code: string, name: string}[]>([]);
+  const [selectedCampuses, setSelectedCampuses] = useState<string[]>([]);
+  const [showOnlyOpen, setShowOnlyOpen] = useState(true);
 
   const colors = [
     'bg-blue-900/30',
@@ -156,6 +161,125 @@ export default function SchedulePage() {
     handleSearch();
   }, [selectedSubject]);
 
+  useEffect(() => {
+    const fetchCampusData = async () => {
+      console.log("Fetching campus data...");
+      const { data, error } = await supabase
+        .from("meetingtimes")
+        .select("campusname")
+        .not("campusname", "is", null);
+      
+      if (error) {
+        console.error("Error fetching campus data:", error);
+        return;
+      }
+      
+      console.log("Raw campus data:", data);
+      
+      if (data) {
+        // Get unique campuses, filter out empty strings, and sort
+        const uniqueCampuses = Array.from(
+          new Set(data.map(item => item.campusname))
+        )
+        .filter(campusName => campusName.trim() !== "") // Remove empty strings
+        .map(campusName => ({
+          code: campusName,
+          name: campusName === "** INVALID **" ? "ONLINE" : campusName
+        }))
+        .sort((a, b) => {
+          // Put Online first
+          if (a.name === "Online") return -1;
+          if (b.name === "Online") return 1;
+          // Sort others alphabetically
+          return a.name.localeCompare(b.name);
+        });
+        
+        console.log("Processed campus options:", uniqueCampuses);
+        setCampusOptions(uniqueCampuses);
+      }
+    };
+    
+    fetchCampusData();
+  }, []);
+
+  // Add a useEffect to log when campusOptions changes
+  useEffect(() => {
+    console.log("Campus options updated:", campusOptions);
+  }, [campusOptions]);
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim() && !selectedSubject && selectedCampuses.length === 0) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      let query = supabase
+        .from("courses")
+        .select(`
+          id,
+          title,
+          coursestring,
+          credits,
+          coursedescription,
+          schooldescription,
+          subject,
+          subjectdescription
+        `)
+        .limit(100); // Add a limit to prevent timeouts
+
+      if (searchQuery.trim()) {
+        query = query.ilike("title", `%${searchQuery}%`);
+      }
+      
+      if (selectedSubject) {
+        query = query.eq("subject", selectedSubject);
+      }
+
+      const { data: courses, error: coursesError } = await query;
+
+      if (coursesError) {
+        console.error("Error fetching courses:", coursesError);
+        return;
+      }
+
+      if (!courses || courses.length === 0) {
+        setSearchResults([]);
+        return;
+      }
+
+      // If campuses are selected, filter the courses
+      if (selectedCampuses.length > 0) {
+        const { data: sections, error: sectionsError } = await supabase
+          .from("sections")
+          .select(`
+            id,
+            course_id,
+            meetingtimes!inner(
+              campusname
+            )
+          `)
+          .in("meetingtimes.campusname", selectedCampuses)
+          .in("course_id", courses.map(c => c.id));
+
+        if (sectionsError) {
+          console.error("Error fetching sections:", sectionsError);
+          return;
+        }
+
+        // Filter courses to only those with matching sections
+        const validCourseIds = new Set(sections.map(s => s.course_id));
+        const filteredCourses = courses.filter(course => validCourseIds.has(course.id));
+        setSearchResults(filteredCourses);
+      } else {
+        setSearchResults(courses);
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchResults([]);
+    }
+  };
+
   const fetchSections = async (courseId: number) => {
     const { data: sectionsData, error: sectionsError } = await supabase
       .from("sections")
@@ -173,8 +297,14 @@ export default function SchedulePage() {
       return;
     }
 
+    // Filter sections based on open status if needed
+    let filteredSections = sectionsData || [];
+    if (showOnlyOpen) {
+      filteredSections = filteredSections.filter(section => section.openstatus);
+    }
+
     const sectionsWithMeetingTimes = await Promise.all(
-      (sectionsData || []).map(async (section) => {
+      filteredSections.map(async (section) => {
         const { data: meetingTimesData, error: meetingTimesError } = await supabase
           .from("meetingtimes")
           .select(`
@@ -226,36 +356,6 @@ export default function SchedulePage() {
 
     setSelectedCourseForSections(null);
     setSections([]);
-  };
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim() && !selectedSubject) {
-      setSearchResults([]);
-      return;
-    }
-
-    let query = supabase
-      .from("courses")
-      .select("*");
-    
-    if (searchQuery.trim()) {
-      query = query.ilike("title", `%${searchQuery}%`);
-    }
-    
-    if (selectedSubject) {
-      query = query.eq("subject", selectedSubject);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error("Search error:", error);
-      return;
-    }
-
-    if (data) {
-      setSearchResults(data);
-    }
   };
 
   const removeCourse = (courseId: string) => {
@@ -393,6 +493,59 @@ export default function SchedulePage() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="openOnly" 
+                      checked={showOnlyOpen} 
+                      onCheckedChange={(checked) => {
+                        setShowOnlyOpen(checked as boolean);
+                        handleSearch();
+                      }}
+                    />
+                    <Label htmlFor="openOnly">Show only open sections</Label>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Campus</Label>
+                    <Card className="p-4 border">
+                      <div className="space-y-3">
+                        <div>
+                          <h3 className="text-sm font-medium">Select Campuses</h3>
+                          <p className="text-sm text-muted-foreground">Filter courses by campus location</p>
+                        </div>
+                        <div className="space-y-2">
+                          {campusOptions.length === 0 ? (
+                            <div className="text-sm text-muted-foreground">
+                              Loading campuses...
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              {campusOptions.map((campus) => (
+                                <div key={campus.code} className="flex items-center space-x-2">
+                                  <Checkbox 
+                                    id={`campus-${campus.code}`} 
+                                    checked={selectedCampuses.includes(campus.code)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedCampuses([...selectedCampuses, campus.code]);
+                                      } else {
+                                        setSelectedCampuses(selectedCampuses.filter(c => c !== campus.code));
+                                      }
+                                      handleSearch();
+                                    }}
+                                  />
+                                  <Label htmlFor={`campus-${campus.code}`} className="text-sm cursor-pointer">
+                                    {campus.name || campus.code}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
                 </div>
 
                 <div className="mt-4 space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto">
@@ -409,13 +562,13 @@ export default function SchedulePage() {
                             <p className="text-sm text-muted-foreground">
                               {course.coursestring} • {course.credits} credits
                             </p>
-                            {course.courseDescription && (
+                            {course.coursedescription && (
                               <p className="text-sm text-muted-foreground line-clamp-2">
-                                {course.courseDescription}
+                                {course.coursedescription}
                               </p>
                             )}
                             <p className="text-sm text-muted-foreground">
-                              {course.schoolDescription}
+                              {course.schooldescription}
                             </p>
                           </div>
                         </div>
