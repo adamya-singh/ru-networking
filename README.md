@@ -1,5 +1,17 @@
 # RUNetworking: Unified Course Planning and Student Networking Platform
 
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-412991?style=for-the-badge&logo=openai&logoColor=white)
+
+<div align="center">
+  <img src="./assets/Verizon Challenge Demo.gif" alt="RUNetworking Demo" width="800"/>
+  <br />
+  <em>RUNetworking demonstration</em>
+</div>
+
 ## Problem Statement
 Currently, the resources for finding course information and planning schedules at Rutgers are scattered across the web and uncoordinated, making it complicated and inconvenient for students to find the information they need to register for classes. Additionally, students want to meet other people who share the same interests, but huge lectures and small recitations make it hard to meet most of the people in their classes.
 
